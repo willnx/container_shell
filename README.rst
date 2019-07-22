@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/willnx/container_shell.svg?branch=master
+    :target: https://travis-ci.org/willnx/container_shell
+
 ###############
 Container Shell
 ###############
