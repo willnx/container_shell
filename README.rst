@@ -2,7 +2,7 @@
     :target: https://travis-ci.org/willnx/container_shell
 
 .. image:: https://coveralls.io/repos/github/willnx/container_shell/badge.svg
-:target: https://coveralls.io/github/willnx/container_shell
+    :target: https://coveralls.io/github/willnx/container_shell
 
 
 ###############
