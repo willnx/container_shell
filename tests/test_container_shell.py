@@ -12,12 +12,14 @@ from container_shell.lib.config import _default
 class TestContainerShellMain(unittest.TestCase):
     """A suite of test cases for the container_shell main function"""
 
+    @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell, 'get_config')
     @patch.object(container_shell, 'dockerpty')
     @patch.object(container_shell, 'docker')
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
-    def test_basic(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty, fake_get_config):
+    def test_basic(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
+                   fake_get_config, fake_get_logger):
         """``container_shell`` The 'main' function is runnable"""
         fake_get_config.return_value = (_default(), True, '')
         try:
@@ -29,6 +31,7 @@ class TestContainerShellMain(unittest.TestCase):
 
         self.assertTrue(runable)
 
+    @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell.subprocess, 'Popen')
     @patch.object(container_shell.sys, 'exit')
     @patch.object(container_shell, 'getpwnam')
@@ -38,7 +41,7 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_admin(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                   fake_get_config, fake_getpwnam, fake_exit, fake_Popen):
+                   fake_get_config, fake_getpwnam, fake_exit, fake_Popen, fake_get_logger):
         """``conatiner_shell`` Skips invoking a container if the identity is white-listed"""
         fake_config = _default()
         fake_config['config']['skip_users'] = 'admin,bob,liz'

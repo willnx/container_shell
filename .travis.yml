@@ -3,9 +3,15 @@ python:
   - "3.5"
   - "3.6"
 
+before_install:
+  - pip install python-coveralls
+
 install:
   - pip install -r requirements-dev.txt
 
 script:
-  - make lint
   - make test
+  - make lint
+
+after_success:
+  - coveralls
