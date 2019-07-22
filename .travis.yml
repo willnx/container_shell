@@ -4,7 +4,7 @@ python:
   - "3.6"
 
 before_install:
-  - pip python-coveralls
+  - pip install python-coveralls
 
 install:
   - pip install -r requirements-dev.txt
