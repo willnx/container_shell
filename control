@@ -1,0 +1,7 @@
+Package: ContainerShell
+Version: VERSION
+Architecture: amd64
+Maintainer: Nicholas Willhite <willnx84@gmail.com>
+Depends: docker-ce
+Homepage: https://github.com/willnx/container_shell
+Description: Like other shells, but drops users into a Docker container instead.
