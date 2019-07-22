@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# While not "by the books" for a Debian package, there's no promise that the
+# the GID of the docker group on *my* machine is the same as another persons.
+# So this post-install script will ensure that the correct permissions are
+# applied so the container_shell binary will work after installation
+
+chown :docker /usr/bin/container_shell
+chmod g+s /usr/bin/container_shell
+
+mkdir -p /var/log/container_shell
+# Yeah, this is a bit cheesy, but it:
+#   A) Centralized the location of the log file
+#   B) Allows all users to write to it, without opening all of /var/log
+# If you have a better idea, I'd love to hear what it is!
+chmod 777 /var/log/container_shell
