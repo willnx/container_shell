@@ -8,7 +8,7 @@ To try/test the example, rename the ``INI`` file to simply ``/etc/container_shel
 on your system.
 
 All of the `GIFs <https://en.wikipedia.org/wiki/GIF>`_ are demonstrating the
-use of Container Shell via the ```ForceCommand`` key in the
+use of Container Shell via the ``ForceCommand`` key in the
 `sshd_config <https://linux.die.net/man/5/sshd_config>`_ file of a Ubuntu 18.04
 host.
 
