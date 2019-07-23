@@ -8,7 +8,6 @@ clean:
 	-rm -f tests/.coverage
 	-rm container_shell.spec
 	-rm -rf ContainerShell-*/
-	-rm -rf rpmbuild
 	-docker rm $(shell docker ps -aq)
 	-docker rmi $(shell docker images -q --filter "dangling=true")
 
