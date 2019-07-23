@@ -1,4 +1,5 @@
 VERSION  = $(shell cat VERSION)
+CWD = $(shell pwd)
 
 clean:
 	-rm -rf build
@@ -7,6 +8,7 @@ clean:
 	-rm -f tests/.coverage
 	-rm container_shell.spec
 	-rm -rf ContainerShell-*/
+	-rm -rf rpmbuild
 	-docker rm $(shell docker ps -aq)
 	-docker rmi $(shell docker images -q --filter "dangling=true")
 
@@ -35,7 +37,25 @@ deb:
 	dpkg -b ContainerShell-$(VERSION)
 	mv ContainerShell*.deb dist/
 
-pkgs: binary deb
+rpm:
+	mkdir -p build/ContainerShell-$(VERSION)/usr/bin
+	mkdir -p build/ContainerShell-$(VERSION)/etc/container_shell
+	cp sample.config.ini build/ContainerShell-$(VERSION)/etc/container_shell
+	cp dist/container_shell build/ContainerShell-$(VERSION)/usr/bin
+	cd build && tar -czvf ../dist/ContainerShell-$(VERSION).tar.gz ContainerShell-$(VERSION)
+	mkdir -p build/rpm/BUILD
+	mkdir -p build/rpm/SOURCES
+	mkdir -p build/rpm/SPECS
+	mv dist/ContainerShell-$(VERSION).tar.gz build/rpm/SOURCES
+	cp container_shell.rpm.spec build/rpm/SPECS/container_shell.spec
+	sed -i -e 's/VERSION/'$(VERSION)'/g' build/rpm/SPECS/container_shell.spec
+	rpmbuild --bb --define '_topdir '$(CWD)'/build/rpm' build/rpm/SPECS/container_shell.spec
+	mv build/rpm/RPMS/x86_64/ContainerShell*.rpm dist/
+
+
+pkgs: binary deb rpm
+	sudo rm -rf ContainerShell-$(VERSION)
+	rm -rf build/ContainerShell-$(VERSION)
 
 
 lint:

@@ -74,3 +74,6 @@ man/
 site-packages/
 lib-python/
 lib_pypy/
+
+# So the source RPM spec isn't auto ignored
+!container_shell.rpm.spec
