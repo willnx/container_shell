@@ -20,7 +20,7 @@ class TestDefault(unittest.TestCase):
         test_config.add_section('qos')
         test_config.add_section('binaries')
 
-        test_config.set('config', 'image', 'busybox:latest')
+        test_config.set('config', 'image', 'debian:latest')
         test_config.set('config', 'hostname', 'someserver')
         test_config.set('config', 'auto_refresh', '')
         test_config.set('config', 'skip_users', '')

@@ -44,8 +44,7 @@ format, so it's easy to modify.
 If no file exists, then Container Shell will assume some defaults. The main
 section you'll want to adjust for your installation is the ``config`` section,
 where you can define which container image a user will be placed into. By default,
-Container Shell will use `busybox <https://hub.docker.com/_/busybox>`_ (just
-because it's so small).
+Container Shell will use the latest `debian <https://www.debian.org/>`_ image.
 
 A sample config is installed to ``/etc/container_shell/sample.config.ini``, which
 will have additional context. But if you're checking out the repo, the sample
