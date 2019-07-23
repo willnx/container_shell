@@ -31,7 +31,8 @@ Installing
 Container Shell is distributed as both an
 `RPM <https://en.wikipedia.org/wiki/RPM_Package_Manager>`_  and a
 `deb <https://en.wikipedia.org/wiki/Deb_(file_format)>`_. Just download the
-one that works for your OS, and install it like any other package!
+one that works for your OS from the `Releases <https://github.com/willnx/container_shell/releases>`_
+page and install it like any other package!
 
 
 Configuring the container
