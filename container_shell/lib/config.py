@@ -40,7 +40,7 @@ def _default():
     config.add_section('qos')
     config.add_section('binaries')
 
-    config.set('config', 'image', 'busybox:latest')
+    config.set('config', 'image', 'debian:latest')
     config.set('config', 'hostname', 'someserver')
     config.set('config', 'auto_refresh', '')
     config.set('config', 'skip_users', '')
