@@ -13,6 +13,7 @@ from container_shell.lib.config import get_config
 from container_shell.lib import utils, dockage
 
 #pylint: disable=R0915
+#pylint: disable=R0912
 def main():
     """Entry point logic"""
     user_info = getpwnam(getuser())
@@ -28,13 +29,21 @@ def main():
     if using_defaults:
         logger.debug('No defined config file at %s. Using default values', location)
 
+    original_cmd = os.getenv('SSH_ORIGINAL_COMMAND', '')
+    if original_cmd.startswith('scp'):
+        if config['config']['disable_scp']:
+            utils.printerr('Unable to SCP files onto this system. Forbidden.')
+            sys.exit(1)
+        else:
+            logger.debug('Allowing %s to SCP file. Syntax: %s', username, original_cmd)
+            proc = subprocess.run(original_cmd.split())
+            sys.exit(proc.returncode)
 
     if utils.skip_container(username, config['config']['skip_users']):
         logger.info('User %s accessing host environment', username)
-        cmd = os.getenv('SSH_ORIGINAL_COMMAND')
-        if not cmd:
-            cmd = os.getenv('SHELL')
-        proc = subprocess.Popen(cmd.split(), shell=True)
+        if not original_cmd:
+            original_cmd = os.getenv('SHELL')
+        proc = subprocess.Popen(original_cmd.split(), shell=True)
         proc.communicate()
         sys.exit(proc.returncode)
 

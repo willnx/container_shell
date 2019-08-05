@@ -45,6 +45,7 @@ def _default():
     config.set('config', 'auto_refresh', '')
     config.set('config', 'skip_users', '')
     config.set('config', 'create_user', 'true')
+    config.set('config', 'disable_scp', '')
     config.set('config', 'command', '')
     config.set('logging', 'location', '/var/log/container_shell/messages.log')
     config.set('logging', 'max_size', '1024000') # 1MB
