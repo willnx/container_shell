@@ -166,7 +166,7 @@ def qos(qos_params, logger):
         qos_args['cpu_period'] = scheduler_period
     memory = _get_qos_value(qos_params, 'memory', 'string', logger)
     if memory:
-        qos_args['memory'] = memory
+        qos_args['mem_limit'] = memory
     device_read_iops = _get_qos_value(qos_params, 'device_read_iops', 'int', logger)
     if device_read_iops:
         qos_args['device_read_iops'] = [{'path': default_device, 'rate': device_read_iops}]

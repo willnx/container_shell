@@ -169,7 +169,7 @@ class TestQos(unittest.TestCase):
         self.qos_params['memory'] = '15g'
 
         qos_args = dockage.qos(self.qos_params, self.fake_logger)
-        expected = {'memory': '15g'}
+        expected = {'mem_limit': '15g'}
 
         self.assertEqual(qos_args, expected)
 
