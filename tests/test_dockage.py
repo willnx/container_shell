@@ -81,7 +81,7 @@ class TestContainerCommand(unittest.TestCase):
                                         command='',
                                         runuser='/sbin/runuser',
                                         useradd='/sbin/adduser')
-        expected = "/bin/bash -c '/sbin/adduser -m -u 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -lf '"
+        expected = "/bin/bash -c '/sbin/adduser -m -u 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -l '"
 
         self.assertEqual(cmd, expected)
 
