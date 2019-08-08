@@ -116,7 +116,7 @@ def container_command(username, user_uid, create_user, command, runuser, useradd
             run_user = '{0} -u {1} {2}'.format(runuser, username, command)
         else:
             # if not a specific command, treat this as a login shell
-            run_user = '{0} {1} -lf {2}'.format(runuser, username, command)
+            run_user = '{0} {1} -l {2}'.format(runuser, username, command)
         make_user = '{0} -m -u {1} -s /bin/bash {2} 2>/dev/null'.format(useradd, user_uid, username)
 
         everything = "/bin/bash -c '{0} && {1}'".format(make_user, run_user)
