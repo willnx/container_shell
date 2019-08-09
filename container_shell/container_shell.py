@@ -36,8 +36,8 @@ def main():
             sys.exit(1)
         else:
             logger.debug('Allowing %s to SCP file. Syntax: %s', username, original_cmd)
-            proc = subprocess.run(original_cmd.split())
-            sys.exit(proc.returncode)
+            returncode = subprocess.call(original_cmd.split())
+            sys.exit(returncode)
 
     if utils.skip_container(username, config['config']['skip_users']):
         logger.info('User %s accessing host environment', username)
