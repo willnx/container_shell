@@ -30,7 +30,7 @@ def main():
         logger.debug('No defined config file at %s. Using default values', location)
 
     original_cmd = os.getenv('SSH_ORIGINAL_COMMAND', '')
-    if original_cmd.startswith('scp'):
+    if original_cmd.startswith('scp') or original_cmd.endswith('sftp-server'):
         if config['config']['disable_scp']:
             utils.printerr('Unable to SCP files onto this system. Forbidden.')
             sys.exit(1)
