@@ -57,7 +57,7 @@ class TestContainerShellMain(unittest.TestCase):
 
     @patch.object(container_shell.os, 'getenv')
     @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell.subprocess, 'run')
+    @patch.object(container_shell.subprocess, 'call')
     @patch.object(container_shell.sys, 'exit')
     @patch.object(container_shell, 'getpwnam')
     @patch.object(container_shell, 'get_config')
@@ -66,7 +66,7 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_scp(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                 fake_get_config, fake_getpwnam, fake_exit, fake_run, fake_get_logger,
+                 fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
                  fake_getenv):
         """``conatiner_shell`` Skips invoking a container if the identity is white-listed"""
         fake_config = _default()
@@ -79,11 +79,11 @@ class TestContainerShellMain(unittest.TestCase):
 
         container_shell.main()
 
-        self.assertTrue(fake_run.called)
+        self.assertTrue(fake_call.called)
 
     @patch.object(container_shell.os, 'getenv')
     @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell.subprocess, 'run')
+    @patch.object(container_shell.subprocess, 'call')
     @patch.object(container_shell.sys, 'exit')
     @patch.object(container_shell, 'getpwnam')
     @patch.object(container_shell, 'get_config')
@@ -92,7 +92,7 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_scp_disabled(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                          fake_get_config, fake_getpwnam, fake_exit, fake_run, fake_get_logger,
+                          fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
                           fake_getenv):
         """``conatiner_shell`` Skips invoking a container if the identity is white-listed"""
         fake_config = _default()
@@ -106,7 +106,60 @@ class TestContainerShellMain(unittest.TestCase):
 
         container_shell.main()
 
-        self.assertFalse(fake_run.called)
+        self.assertFalse(fake_call.called)
+
+    @patch.object(container_shell.os, 'getenv')
+    @patch.object(container_shell.utils, 'get_logger')
+    @patch.object(container_shell.subprocess, 'call')
+    @patch.object(container_shell.sys, 'exit')
+    @patch.object(container_shell, 'getpwnam')
+    @patch.object(container_shell, 'get_config')
+    @patch.object(container_shell, 'dockerpty')
+    @patch.object(container_shell, 'docker')
+    @patch.object(container_shell, 'dockage')
+    @patch.object(container_shell.utils, 'printerr')
+    def test_sftp(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
+                  fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
+                  fake_getenv):
+        """``conatiner_shell`` Skips invoking a container if SCP is enabled and SFTP is being used"""
+        fake_config = _default()
+        fake_getenv.return_value = '/some/path/to/sftp-server'
+        fake_get_config.return_value = (fake_config, True, '')
+        fake_user_info = MagicMock()
+        fake_user_info.pw_name = 'admin'
+        fake_user_info.pw_uid = 1000
+        fake_getpwnam.return_value = fake_user_info
+
+        container_shell.main()
+
+        self.assertTrue(fake_call.called)
+
+    @patch.object(container_shell.os, 'getenv')
+    @patch.object(container_shell.utils, 'get_logger')
+    @patch.object(container_shell.subprocess, 'call')
+    @patch.object(container_shell.sys, 'exit')
+    @patch.object(container_shell, 'getpwnam')
+    @patch.object(container_shell, 'get_config')
+    @patch.object(container_shell, 'dockerpty')
+    @patch.object(container_shell, 'docker')
+    @patch.object(container_shell, 'dockage')
+    @patch.object(container_shell.utils, 'printerr')
+    def test_sftp_disabled(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
+                           fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
+                           fake_getenv):
+        """``conatiner_shell`` Denies use of SFTP if SCP is disabled"""
+        fake_config = _default()
+        fake_config['config']['disable_scp'] = 'true'
+        fake_getenv.return_value = '/some/path/to/sftp-server'
+        fake_get_config.return_value = (fake_config, True, '')
+        fake_user_info = MagicMock()
+        fake_user_info.pw_name = 'admin'
+        fake_user_info.pw_uid = 1000
+        fake_getpwnam.return_value = fake_user_info
+
+        container_shell.main()
+
+        self.assertFalse(fake_call.called)
 
     @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell.sys, 'exit')
