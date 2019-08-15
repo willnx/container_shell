@@ -18,6 +18,7 @@ def build_args(config, username, user_uid, logger):
         'image' : config['config'].get('image'),
         'hostname' : config['config'].get('hostname'),
         'tty' : True,
+        'init' : True,
         'stdin_open' : True,
         'dns' : dns(config['dns']['servers']),
         'mounts' : mounts(config['mounts']),
