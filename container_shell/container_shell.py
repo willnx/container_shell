@@ -7,10 +7,9 @@ from pwd import getpwnam
 from getpass import getuser
 
 import docker
-import dockerpty
 
 from container_shell.lib.config import get_config
-from container_shell.lib import utils, dockage
+from container_shell.lib import utils, dockage, dockerpty
 
 #pylint: disable=R0915
 #pylint: disable=R0912
