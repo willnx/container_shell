@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 import docker
+import requests
 
 from container_shell import container_shell
 from container_shell.lib.config import _default
@@ -231,92 +232,129 @@ class TestContainerShellMain(unittest.TestCase):
 
         self.assertEqual(error_msg, expected_msg)
 
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell.docker, 'from_env')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_kill_failure(self, fake_printerr, fake_dockage, fake_docker_from_env,
-                         fake_dockerpty, fake_get_config, fake_get_logger):
-        """``container_shell`` Ignores failures to kill a container because it's already been killed"""
-        fake_get_config.return_value = (_default(), True, '')
+    def test_kill_container(self):
+        """``container_shell`` 'kill_container' only logs if there's an unexpected error"""
         fake_container = MagicMock()
-        fake_container.kill.side_effect = docker.errors.NotFound('Testing')
-        fake_docker_client = MagicMock()
-        fake_docker_client.containers.create.return_value = fake_container
-        fake_docker_from_env.return_value = fake_docker_client
-
-        container_shell.main()
-
-        self.assertTrue(fake_container.kill.called)
-
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell.docker, 'from_env')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_kill_unknown_failure(self, fake_printerr, fake_dockage, fake_docker_from_env,
-                                  fake_dockerpty, fake_get_config, fake_get_logger):
-        """``container_shell``  Logs unexpected errors when terminating/killing a container"""
-        fake_get_config.return_value = (_default(), True, '')
+        the_signal = 'SIGHUP'
         fake_logger = MagicMock()
-        fake_get_logger.return_value = fake_logger
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        # If you call hasattr() on MagicMock, it'll add the addr, but dir() doesn't
+        attrs = dir(fake_logger)
+        self.assertFalse(fake_logger.called)
+        self.assertFalse('exception' in attrs)
+        self.assertFalse('error' in attrs)
+        self.assertFalse('info' in attrs)
+
+    def test_kill_container_exec_run_error_ignore(self):
+        """``container_shell`` 'kill_container' ignore errors if the container is already stopped"""
         fake_container = MagicMock()
-        fake_container.kill.side_effect = Exception('Testing')
-        fake_docker_client = MagicMock()
-        fake_docker_client.containers.create.return_value = fake_container
-        fake_docker_from_env.return_value = fake_docker_client
+        fake_resp = MagicMock()
+        fake_resp.status_code = 409
+        fake_container.exec_run.side_effect = [requests.exceptions.HTTPError('testing', response=fake_resp)]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
 
-        container_shell.main()
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        # If you call hasattr() on MagicMock, it'll add the addr, but dir() doesn't
+        attrs = dir(fake_logger)
+        self.assertFalse(fake_logger.called)
+        self.assertFalse('exception' in attrs)
+        self.assertFalse('error' in attrs)
+        self.assertFalse('info' in attrs)
 
+    def test_kill_container_exec_run_error(self):
+        """``container_shell`` 'kill_container' logs unexpected errors when executing 'kill' in the container"""
+        fake_container = MagicMock()
+        fake_resp = MagicMock()
+        fake_resp.status_code = 500
+        fake_container.exec_run.side_effect = [requests.exceptions.HTTPError('testing', response=fake_resp)]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
         self.assertTrue(fake_logger.exception.called)
 
-
-
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell.docker, 'from_env')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_remove_failure(self, fake_printerr, fake_dockage, fake_docker_from_env,
-                         fake_dockerpty, fake_get_config, fake_get_logger):
-        """``container_shell`` Ignores failures to delete a container because it's already been deleted"""
-        fake_get_config.return_value = (_default(), True, '')
+    def test_kill_container_kill_ignore_404(self):
+        """``container_shell`` 'kill_container' ignore expected errors when killing the container"""
         fake_container = MagicMock()
-        fake_container.remove.side_effect = docker.errors.NotFound('Testing')
-        fake_docker_client = MagicMock()
-        fake_docker_client.containers.create.return_value = fake_container
-        fake_docker_from_env.return_value = fake_docker_client
-
-        container_shell.main()
-
-        self.assertTrue(fake_container.kill.called)
-
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell.docker, 'from_env')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_remove_unknown_failure(self, fake_printerr, fake_dockage, fake_docker_from_env,
-                                    fake_dockerpty, fake_get_config, fake_get_logger):
-        """``container_shell`` Logs unexpected errors when deleting a container"""
-        fake_get_config.return_value = (_default(), True, '')
+        fake_resp = MagicMock()
+        fake_resp.status_code = 404
+        fake_container.kill.side_effect = [requests.exceptions.HTTPError('testing', response=fake_resp)]
+        the_signal = 'SIGHUP'
         fake_logger = MagicMock()
-        fake_get_logger.return_value = fake_logger
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        # If you call hasattr() on MagicMock, it'll add the addr, but dir() doesn't
+        attrs = dir(fake_logger)
+        self.assertFalse(fake_logger.called)
+        self.assertFalse('exception' in attrs)
+        self.assertFalse('error' in attrs)
+        self.assertFalse('info' in attrs)
+
+    def test_kill_container_kill_ignore_409(self):
+        """``container_shell`` 'kill_container' ignore expected errors when killing the container"""
         fake_container = MagicMock()
-        fake_container.remove.side_effect = Exception('Testing')
-        fake_docker_client = MagicMock()
-        fake_docker_client.containers.create.return_value = fake_container
-        fake_docker_from_env.return_value = fake_docker_client
+        fake_resp = MagicMock()
+        fake_resp.status_code = 409
+        fake_container.kill.side_effect = [requests.exceptions.HTTPError('testing', response=fake_resp)]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
 
-        container_shell.main()
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        # If you call hasattr() on MagicMock, it'll add the addr, but dir() doesn't
+        attrs = dir(fake_logger)
+        self.assertFalse(fake_logger.called)
+        self.assertFalse('exception' in attrs)
+        self.assertFalse('error' in attrs)
+        self.assertFalse('info' in attrs)
 
+    def test_kill_container_kill_logs(self):
+        """``container_shell`` 'kill_container' logs unexpected errors when killing the container"""
+        fake_container = MagicMock()
+        fake_resp = MagicMock()
+        fake_resp.status_code = 500
+        fake_container.kill.side_effect = [requests.exceptions.HTTPError('testing', response=fake_resp)]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
         self.assertTrue(fake_logger.exception.called)
 
+    def test_kill_container_kill_exception(self):
+        """``container_shell`` 'kill_container' logs generic exception errors when killing the container"""
+        fake_container = MagicMock()
+        fake_container.kill.side_effect = [RuntimeError('testing')]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        self.assertTrue(fake_logger.exception.called)
+
+    def test_remove_not_found(self):
+        """``container_shell`` 'kill_container' ignores errors when trying to delete an already deleted container"""
+        fake_container = MagicMock()
+        fake_container.remove.side_effect = [docker.errors.NotFound('testing')]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        # If you call hasattr() on MagicMock, it'll add the addr, but dir() doesn't
+        attrs = dir(fake_logger)
+        self.assertFalse(fake_logger.called)
+        self.assertFalse('exception' in attrs)
+        self.assertFalse('error' in attrs)
+        self.assertFalse('info' in attrs)
+
+    def test_remove_exception(self):
+        """``container_shell`` 'kill_container' logs unexpected errors when trying to delete a container"""
+        fake_container = MagicMock()
+        fake_container.remove.side_effect = [RuntimeError('testing')]
+        the_signal = 'SIGHUP'
+        fake_logger = MagicMock()
+
+        container_shell.kill_container(fake_container, the_signal, fake_logger)
+        self.assertTrue(fake_logger.exception.called)
 
 
 if __name__ == '__main__':
