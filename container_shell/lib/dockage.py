@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 """Functions to help construct the docker container"""
+import sys
 import uuid
 
 import docker
@@ -17,7 +18,7 @@ def build_args(config, username, user_uid, logger):
     container_kwargs = {
         'image' : config['config'].get('image'),
         'hostname' : config['config'].get('hostname'),
-        'tty' : True,
+        'tty' : sys.stdout.isatty(),
         'init' : True,
         'stdin_open' : True,
         'dns' : dns(config['dns']['servers']),
@@ -114,13 +115,14 @@ def container_command(username, user_uid, create_user, command, runuser, useradd
     # the user, which is a safer default should a sys admin typo the config.
     if create_user.lower() != 'false':
         if command:
-            run_user = '{0} -u {1} {2}'.format(runuser, username, command)
+            run_user = "{0} {1} -c \"{2}\"".format(runuser, username, command)
         else:
             # if not a specific command, treat this as a login shell
             run_user = '{0} {1} -l {2}'.format(runuser, username, command)
         make_user = '{0} -m -u {1} -s /bin/bash {2} 2>/dev/null'.format(useradd, user_uid, username)
 
-        everything = "/bin/bash -c '{0} && {1}'".format(make_user, run_user)
+        #everything = "/bin/bash -c '{0} && {1}'".format(make_user, run_user)
+        everything = "/bin/bash -c '{} && {}'".format(make_user, run_user)
     elif command:
         everything = command
     else:
