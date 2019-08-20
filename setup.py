@@ -12,6 +12,6 @@ setup(name="container-shell",
       version=version,
       packages=find_packages(),
       description="SSH logins drop users into a docker environment",
-      install_requires=['docker', 'dockerpty'],
+      install_requires=['docker', 'six'],
       entry_points={'console_scripts' : 'container_shell=container_shell.container_shell:main'}
       )
