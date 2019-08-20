@@ -7,7 +7,7 @@ import logging.handlers
 
 
 def skip_container(username, skip_users):
-    """Allows some users to access the host, instead of being dropped into a continer
+    """Allows some users to access the host, instead of being dropped into a container
 
     :Returns: Boolean
 
