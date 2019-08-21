@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 """A suite of unit tests for the container_shell module"""
+import argparse
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -24,8 +25,8 @@ class TestContainerShellMain(unittest.TestCase):
         """``container_shell`` The 'main' function is runnable"""
         fake_get_config.return_value = (_default(), True, '')
         try:
-            container_shell.main()
-        except Exception:
+            container_shell.main(cli_args=[])
+        except Exception as doh:
             runable = False
         else:
             runable = True
@@ -52,115 +53,9 @@ class TestContainerShellMain(unittest.TestCase):
         fake_user_info.pw_uid = 1000
         fake_getpwnam.return_value = fake_user_info
 
-        container_shell.main()
+        container_shell.main(cli_args=[])
 
         self.assertTrue(fake_Popen.called)
-
-    @patch.object(container_shell.os, 'getenv')
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell.subprocess, 'call')
-    @patch.object(container_shell.sys, 'exit')
-    @patch.object(container_shell, 'getpwnam')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell, 'docker')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_scp(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                 fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
-                 fake_getenv):
-        """``conatiner_shell`` Skips invoking a container if the identity is white-listed"""
-        fake_config = _default()
-        fake_getenv.return_value = 'scp -v -t /some/file.txt'
-        fake_get_config.return_value = (fake_config, True, '')
-        fake_user_info = MagicMock()
-        fake_user_info.pw_name = 'admin'
-        fake_user_info.pw_uid = 1000
-        fake_getpwnam.return_value = fake_user_info
-
-        container_shell.main()
-
-        self.assertTrue(fake_call.called)
-
-    @patch.object(container_shell.os, 'getenv')
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell.subprocess, 'call')
-    @patch.object(container_shell.sys, 'exit')
-    @patch.object(container_shell, 'getpwnam')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell, 'docker')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_scp_disabled(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                          fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
-                          fake_getenv):
-        """``conatiner_shell`` Skips invoking a container if the identity is white-listed"""
-        fake_config = _default()
-        fake_config['config']['disable_scp'] = 'true'
-        fake_getenv.return_value = 'scp -v -t /some/file.txt'
-        fake_get_config.return_value = (fake_config, True, '')
-        fake_user_info = MagicMock()
-        fake_user_info.pw_name = 'admin'
-        fake_user_info.pw_uid = 1000
-        fake_getpwnam.return_value = fake_user_info
-
-        container_shell.main()
-
-        self.assertFalse(fake_call.called)
-
-    @patch.object(container_shell.os, 'getenv')
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell.subprocess, 'call')
-    @patch.object(container_shell.sys, 'exit')
-    @patch.object(container_shell, 'getpwnam')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell, 'docker')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_sftp(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                  fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
-                  fake_getenv):
-        """``conatiner_shell`` Skips invoking a container if SCP is enabled and SFTP is being used"""
-        fake_config = _default()
-        fake_getenv.return_value = '/some/path/to/sftp-server'
-        fake_get_config.return_value = (fake_config, True, '')
-        fake_user_info = MagicMock()
-        fake_user_info.pw_name = 'admin'
-        fake_user_info.pw_uid = 1000
-        fake_getpwnam.return_value = fake_user_info
-
-        container_shell.main()
-
-        self.assertTrue(fake_call.called)
-
-    @patch.object(container_shell.os, 'getenv')
-    @patch.object(container_shell.utils, 'get_logger')
-    @patch.object(container_shell.subprocess, 'call')
-    @patch.object(container_shell.sys, 'exit')
-    @patch.object(container_shell, 'getpwnam')
-    @patch.object(container_shell, 'get_config')
-    @patch.object(container_shell, 'dockerpty')
-    @patch.object(container_shell, 'docker')
-    @patch.object(container_shell, 'dockage')
-    @patch.object(container_shell.utils, 'printerr')
-    def test_sftp_disabled(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                           fake_get_config, fake_getpwnam, fake_exit, fake_call, fake_get_logger,
-                           fake_getenv):
-        """``conatiner_shell`` Denies use of SFTP if SCP is disabled"""
-        fake_config = _default()
-        fake_config['config']['disable_scp'] = 'true'
-        fake_getenv.return_value = '/some/path/to/sftp-server'
-        fake_get_config.return_value = (fake_config, True, '')
-        fake_user_info = MagicMock()
-        fake_user_info.pw_name = 'admin'
-        fake_user_info.pw_uid = 1000
-        fake_getpwnam.return_value = fake_user_info
-
-        container_shell.main()
-
-        self.assertFalse(fake_call.called)
 
     @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell.sys, 'exit')
@@ -178,7 +73,7 @@ class TestContainerShellMain(unittest.TestCase):
         fake_docker_client.images.pull.side_effect = docker.errors.DockerException('testing')
         fake_docker.from_env.return_value = fake_docker_client
 
-        container_shell.main()
+        container_shell.main(cli_args=[])
 
         the_args, _  = fake_printerr.call_args
         error_msg = the_args[0]
@@ -200,7 +95,7 @@ class TestContainerShellMain(unittest.TestCase):
         fake_docker_from_env.return_value = fake_docker_client
         fake_docker_client.containers.create.side_effect = docker.errors.DockerException('testing')
         try:
-            container_shell.main()
+            container_shell.main(cli_args=[])
         except SystemExit:
             pass
 
@@ -222,7 +117,7 @@ class TestContainerShellMain(unittest.TestCase):
         fake_get_config.return_value = (_default(), True, '')
         fake_dockerpty.start.side_effect = Exception('testing')
         try:
-            container_shell.main()
+            container_shell.main(cli_args=[])
         except SystemExit:
             pass
 
@@ -355,6 +250,47 @@ class TestContainerShellMain(unittest.TestCase):
 
         container_shell.kill_container(fake_container, the_signal, fake_logger)
         self.assertTrue(fake_logger.exception.called)
+
+    @patch.object(container_shell.signal, 'signal')
+    def test_set_signal_handlers(self, fake_signal):
+        """``container_shell`` 'set_signal_handlers' sets the expected signal handlers"""
+        fake_container = MagicMock()
+        fake_logger = MagicMock()
+
+        container_shell.set_signal_handlers(fake_container, fake_logger)
+        signals_handled = [x[0][0].name for x in fake_signal.call_args_list]
+        expected = ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGABRT', 'SIGTERM']
+
+        # set() avoids false positive due to difference in ordering
+        self.assertEqual(set(signals_handled), set(expected))
+        self.assertTrue(len(signals_handled) == 5)
+
+    def test_parse_cli(self):
+        """``container_shell`` 'parse_cli' returns a Namespace object"""
+        fake_args = []
+        args = container_shell.parse_cli(fake_args)
+
+        self.assertTrue(isinstance(args, argparse.Namespace))
+
+    def test_parse_cli_command_arg(self):
+        """``container_shell`` 'parse_cli' supports the '--command' argument"""
+        fake_args = ['--command', 'some command']
+        args = container_shell.parse_cli(fake_args)
+
+        expected = 'some command'
+        actual = args.command
+
+        self.assertEqual(expected, actual)
+
+    def test_parse_cli_c_arg(self):
+        """``container_shell`` 'parse_cli' supports the '-c' argument"""
+        fake_args = ['-c', 'some command']
+        args = container_shell.parse_cli(fake_args)
+
+        expected = 'some command'
+        actual = args.command
+
+        self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':

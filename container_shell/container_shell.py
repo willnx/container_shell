@@ -17,13 +17,13 @@ from container_shell.lib.config import get_config
 from container_shell.lib import utils, dockage, dockerpty
 
 #pylint: disable=R0914
-def main():
+def main(cli_args=sys.argv[1:]):
     """Entry point logic"""
     user_info = getpwnam(getuser())
     username = user_info.pw_name
     user_uid = user_info.pw_uid
-    args = parse_cli(sys.argv[1:])
-    config, using_defaults, location = get_config(args.command)
+    args = parse_cli(cli_args)
+    config, using_defaults, location = get_config(shell_command=args.command)
     docker_client = docker.from_env()
     logger = utils.get_logger(name=__name__,
                               location=config['logging'].get('location'),
@@ -156,7 +156,8 @@ def parse_cli(cli_args):
     :param cli_args: The command line arguments supplied to container_shell
     :type cli_args: List
     """
-    parser = argparse.ArgumentParser(description='TODO')
+    description = 'A mostly transparent proxy to an isolated shell environment.'
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-c', '--command', default='',
                         help='Execute a specific command, then terminate.')
 
