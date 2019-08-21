@@ -112,8 +112,7 @@ class TestContainerCommand(unittest.TestCase):
                                         command='/usr/local/bin/redis-cli',
                                         runuser='/sbin/runuser',
                                         useradd='/sbin/adduser')
-        expected = "/bin/bash -c '/sbin/adduser -m -u 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser -u liz /usr/local/bin/redis-cli'"
-
+        expected = '/bin/bash -c \'/sbin/adduser -m -u 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -c "/usr/local/bin/redis-cli"\''
         self.assertEqual(cmd, expected)
 
     def test_no_create_command(self):
