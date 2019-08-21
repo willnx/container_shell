@@ -5,10 +5,14 @@ from configparser import ConfigParser
 CONFIG_LOCATION = '/etc/container_shell/config.ini'
 
 
-def get_config(location=CONFIG_LOCATION):
+def get_config(shell_command='', location=CONFIG_LOCATION):
     """Read the supplied INI file, and return a usable object
 
     :Returns: configparser.ConfigParser
+
+    :param shell_command: Override the command to run in the shell with whatever
+                          gets supplied via the CLI.
+    :type shell_command: String
 
     :param location: The location of the config.ini file
     :type location: String
@@ -21,6 +25,8 @@ def get_config(location=CONFIG_LOCATION):
         # no config file exists. This section exists so we can communicate that
         # back up the stack.
         using_defaults = True
+    if shell_command:
+        config['config']['command'] = shell_command
     return config, using_defaults, location
 
 
@@ -45,7 +51,6 @@ def _default():
     config.set('config', 'auto_refresh', '')
     config.set('config', 'skip_users', '')
     config.set('config', 'create_user', 'true')
-    config.set('config', 'disable_scp', '')
     config.set('config', 'command', '')
     config.set('config', 'term_signal', 'SIGHUP')
     config.set('logging', 'location', '/var/log/container_shell/messages.log')

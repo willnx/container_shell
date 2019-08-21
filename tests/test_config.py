@@ -25,7 +25,6 @@ class TestDefault(unittest.TestCase):
         test_config.set('config', 'auto_refresh', '')
         test_config.set('config', 'skip_users', '')
         test_config.set('config', 'create_user', 'true')
-        test_config.set('config', 'disable_scp', '')
         test_config.set('config', 'command', '')
         test_config.set('config', 'term_signal', 'SIGHUP')
         test_config.set('logging', 'location', '/var/log/container_shell/messages.log')
@@ -64,7 +63,6 @@ class TestGetConfig(unittest.TestCase):
 
         self.assertFalse(using_default_values)
 
-
     @patch.object(config.ConfigParser, 'read')
     def test_config_location(self, fake_read):
         """
@@ -77,6 +75,16 @@ class TestGetConfig(unittest.TestCase):
         expected = config.CONFIG_LOCATION
 
         self.assertEqual(config_location, expected)
+
+    @patch.object(config.ConfigParser, 'read')
+    def test_config_command_override(self, fake_read):
+        """``config`` The 'get_config' function can override the defined command"""
+        config_obj, _, _ = config.get_config(shell_command='some command')
+
+        expected = 'some command'
+        actual = config_obj['config']['command']
+
+        self.assertEqual(actual, expected)
 
 
 if __name__ == '__main__':
