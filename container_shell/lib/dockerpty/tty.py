@@ -34,7 +34,6 @@ def size(fd):
     """
     if not os.isatty(fd.fileno()):
         return None
-
     try:
         dims = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, 'hhhh'))
     except Exception: #pylint: disable=W0703
