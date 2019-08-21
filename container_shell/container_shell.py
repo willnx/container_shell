@@ -16,7 +16,7 @@ import requests
 from container_shell.lib.config import get_config
 from container_shell.lib import utils, dockage, dockerpty
 
-#pylint: disable=R0914
+#pylint: disable=R0914,W0102
 def main(cli_args=sys.argv[1:]):
     """Entry point logic"""
     user_info = getpwnam(getuser())
