@@ -59,7 +59,7 @@ def select(read_streams, write_streams, timeout=0):
         )[0:2]
     except builtin_select.error as doh:
         # POSIX signals interrupt select()
-        err_no = doh.errno if six.PY3 else doh[0] #pylint: disable=E1136
+        err_no = doh.errno
         if err_no == errno.EINTR:
             return ([], [])
         raise doh
@@ -115,15 +115,18 @@ class Stream:
                 if doh.errno not in Stream.ERRNO_RECOVERABLE:
                     raise doh
 
-
     def write(self, data):
-        """
-        Write `data` to the Stream. Not all data may be written right away.
+        """Write `data` to the Stream. Not all data may be written right away.
         Use select to find when the stream is writeable, and call do_write()
-        to flush the internal buffer.
+        to flush the internal buffer. Returns the number of bytes written.
+
+        :Returns: Integer
+
+        :param data: The stuff to write to the stream
+        :type data: bytes
         """
         if not data:
-            return None
+            return 0
 
         self.buffer += data
         self.do_write()
@@ -148,7 +151,6 @@ class Stream:
                 # try to close after writes if a close was requested
                 if self.close_requested and len(self.buffer) == 0: #pylint: disable=C1801
                     self.close()
-
                 return written
             except EnvironmentError as doh:
                 if doh.errno not in Stream.ERRNO_RECOVERABLE:
@@ -197,7 +199,6 @@ class Demuxer:
         """
         Initialize a new Demuxer reading from `stream`.
         """
-
         self.stream = stream
         self.remain = 0
 
@@ -207,7 +208,6 @@ class Demuxer:
 
         This is useful for select() to work.
         """
-
         return self.stream.fileno()
 
     def set_blocking(self, value):
@@ -250,7 +250,6 @@ class Demuxer:
         """
         if hasattr(self.stream, 'needs_write'):
             return self.stream.needs_write()
-
         return False
 
     def do_write(self):
@@ -259,7 +258,6 @@ class Demuxer:
         """
         if hasattr(self.stream, 'do_write'):
             return self.stream.do_write()
-
         return False
 
     def close(self):
@@ -283,13 +281,10 @@ class Demuxer:
                     return 0
                 data = data + nxt
 
-            if data is None:
-                return 0
             if len(data) == 8:
                 __, actual = struct.unpack('>BxxxL', data)
                 size = min(n, actual)
                 self.remain = actual - size
-
         return size
 
     def __repr__(self):
