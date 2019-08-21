@@ -5,7 +5,7 @@ from configparser import ConfigParser
 CONFIG_LOCATION = '/etc/container_shell/config.ini'
 
 
-def get_config(shell_command, location=CONFIG_LOCATION):
+def get_config(shell_command='', location=CONFIG_LOCATION):
     """Read the supplied INI file, and return a usable object
 
     :Returns: configparser.ConfigParser

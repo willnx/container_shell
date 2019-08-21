@@ -25,7 +25,6 @@ class TestDefault(unittest.TestCase):
         test_config.set('config', 'auto_refresh', '')
         test_config.set('config', 'skip_users', '')
         test_config.set('config', 'create_user', 'true')
-        test_config.set('config', 'disable_scp', '')
         test_config.set('config', 'command', '')
         test_config.set('config', 'term_signal', 'SIGHUP')
         test_config.set('logging', 'location', '/var/log/container_shell/messages.log')
