@@ -21,10 +21,11 @@ class TestBuildArgs(unittest.TestCase):
         """``dockage`` 'build_args' is a simple wrapper"""
         config = _default()
         username = 'martin'
-        user_uid = '9001'
+        user_uid = 9001
+        user_gid = 9001
         logger = MagicMock()
 
-        dockage.build_args(config, username, user_uid, logger)
+        dockage.build_args(config, username, user_uid, user_gid, logger)
 
         self.assertTrue(fake_qos.called)
         self.assertTrue(fake_dns.called)
@@ -77,11 +78,12 @@ class TestContainerCommand(unittest.TestCase):
         """
         cmd = dockage.container_command(username='liz',
                                         user_uid=9001,
+                                        user_gid=9001,
                                         create_user='true',
                                         command='',
                                         runuser='/sbin/runuser',
                                         useradd='/sbin/adduser')
-        expected = "/bin/bash -c '/sbin/adduser -m -u 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -l '"
+        expected = "/bin/bash -c '/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -l '"
 
         self.assertEqual(cmd, expected)
 
@@ -93,6 +95,7 @@ class TestContainerCommand(unittest.TestCase):
         """
         cmd = dockage.container_command(username='liz',
                                         user_uid=9001,
+                                        user_gid=9001,
                                         create_user='false',
                                         command='',
                                         runuser='/sbin/runuser',
@@ -108,11 +111,13 @@ class TestContainerCommand(unittest.TestCase):
         """
         cmd = dockage.container_command(username='liz',
                                         user_uid=9001,
+                                        user_gid=9001,
                                         create_user='true',
                                         command='/usr/local/bin/redis-cli',
                                         runuser='/sbin/runuser',
                                         useradd='/sbin/adduser')
-        expected = '/bin/bash -c \'/sbin/adduser -m -u 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -c "/usr/local/bin/redis-cli"\''
+        expected = '/bin/bash -c \'/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -c "/usr/local/bin/redis-cli"\''
+
         self.assertEqual(cmd, expected)
 
     def test_no_create_command(self):
@@ -122,6 +127,7 @@ class TestContainerCommand(unittest.TestCase):
         """
         cmd = dockage.container_command(username='liz',
                                         user_uid=9001,
+                                        user_gid=9001,
                                         create_user='false',
                                         command='/usr/local/bin/redis-cli',
                                         runuser='/sbin/runuser',
