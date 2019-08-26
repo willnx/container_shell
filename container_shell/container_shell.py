@@ -22,6 +22,7 @@ def main(cli_args=sys.argv[1:]):
     user_info = getpwnam(getuser())
     username = user_info.pw_name
     user_uid = user_info.pw_uid
+    user_gid = user_info.pw_gid
     args = parse_cli(cli_args)
     config, using_defaults, location = get_config(shell_command=args.command)
     docker_client = docker.from_env()
@@ -32,6 +33,8 @@ def main(cli_args=sys.argv[1:]):
                               level=config['logging'].get('level').upper())
     if using_defaults:
         logger.debug('No defined config file at %s. Using default values', location)
+    else:
+        logger.debug('Custom config:\n%s', config)
 
     if utils.skip_container(username, config['config']['skip_users']):
         logger.info('User %s accessing host environment', username)
@@ -51,7 +54,8 @@ def main(cli_args=sys.argv[1:]):
             utils.printerr('Unable to update login environment')
             sys.exit(1)
 
-    kwargs = dockage.build_args(config, username, user_uid, logger)
+    kwargs = dockage.build_args(config, username, user_uid, user_gid, logger)
+    logger.debug('Container kwargs:\n%s', kwargs)
     try:
         container = docker_client.containers.create(**kwargs)
     except docker.errors.DockerException as doh:
@@ -72,8 +76,8 @@ def main(cli_args=sys.argv[1:]):
         # SSH session will be gone, but the container will remain.
         set_signal_handlers(container, logger)
     try:
+        logger.debug('Starting and connecting to container')
         dockerpty.start(docker_client.api, container.id)
-        logger.info('Broke out of dockerpty')
     except Exception as doh: #pylint: disable=W0703
         logger.exception(doh)
         utils.printerr("Failed to connect to PTY")
@@ -119,6 +123,7 @@ def kill_container(container, the_signal, logger):
     :param logger: An object for writing errors/messages for debugging problems
     :type logger: logging.Logger
     """
+    logger.debug('Tearing down container')
     try:
         container.exec_run('kill -{} 1'.format(the_signal))
     except requests.exceptions.HTTPError as doh:

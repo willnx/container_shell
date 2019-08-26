@@ -6,13 +6,25 @@ import uuid
 import docker
 
 
-def build_args(config, username, user_uid, logger):
+def build_args(config, username, user_uid, user_gid, logger):
     """Construct the arguments to use when creating the container
 
     :Returns: Dictionary
 
     :param config: The defined settings (or defaults) to use when creating the container
     :type config: configparser.ConfigParser
+
+    :param username: The name of the user executing 'container_shell'
+    :param username: String
+
+    :param user_uid: The user-id (UID) of the user executing 'container_shell'
+    :type user_uid: Integer
+
+    :param user_gid: The group-id (GID) of the user executing 'container_shell'
+    :type user_gid: Integer
+
+    :param logger: An object for writing message to a file
+    :type logger:
     """
     qos_args = qos(config['qos'], logger)
     container_kwargs = {
@@ -25,6 +37,7 @@ def build_args(config, username, user_uid, logger):
         'mounts' : mounts(config['mounts']),
         'command' : container_command(username=username,
                                       user_uid=user_uid,
+                                      user_gid=user_gid,
                                       create_user=config['config']['create_user'],
                                       command=config['config']['command'],
                                       runuser=config['binaries']['runuser'],
@@ -80,7 +93,7 @@ def mounts(mount_dict):
     return the_mounts
 
 #pylint: disable=R0913
-def container_command(username, user_uid, create_user, command, runuser, useradd):
+def container_command(username, user_uid, user_gid, create_user, command, runuser, useradd):
     """Constructs the command to run within the container.
 
     Command created will create a user to execute a command within the container.
@@ -94,6 +107,9 @@ def container_command(username, user_uid, create_user, command, runuser, useradd
 
     :param user_uid: **Required** The UID of the user to create within the container
     :Type user_uid: Integer
+
+    :param user_gid: **Required** The GID of the user to create within the container
+    :Type user_gid: Integer
 
     :param create_user: Recreate the user identity inside the new container, and
                         run the shell as that user.
@@ -119,10 +135,14 @@ def container_command(username, user_uid, create_user, command, runuser, useradd
         else:
             # if not a specific command, treat this as a login shell
             run_user = '{0} {1} -l {2}'.format(runuser, username, command)
-        make_user = '{0} -m -u {1} -s /bin/bash {2} 2>/dev/null'.format(useradd, user_uid, username)
+        make_group = '/usr/sbin/groupadd --gid {0} {1}'.format(user_gid, username)
+        make_user = '{0} -m --uid {1} --gid {2} -s /bin/bash {3} 2>/dev/null'.format(useradd,
+                                                                                     user_uid,
+                                                                                     user_gid,
+                                                                                     username)
 
         #everything = "/bin/bash -c '{0} && {1}'".format(make_user, run_user)
-        everything = "/bin/bash -c '{} && {}'".format(make_user, run_user)
+        everything = "/bin/bash -c '{0} && {1} && {2}'".format(make_group, make_user, run_user)
     elif command:
         everything = command
     else:
