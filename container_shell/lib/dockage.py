@@ -86,10 +86,11 @@ def mounts(mount_dict):
     """
     the_mounts = []
     for local_dir, container_dir in mount_dict.items():
-        a_mount = docker.types.Mount(source=local_dir,
-                                     target=container_dir,
-                                     type='bind')
-        the_mounts.append(a_mount)
+        for mount_point in container_dir.split(','):
+            a_mount = docker.types.Mount(source=local_dir,
+                                         target=mount_point,
+                                         type='bind')
+            the_mounts.append(a_mount)
     return the_mounts
 
 #pylint: disable=R0913

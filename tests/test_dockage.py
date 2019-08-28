@@ -68,6 +68,15 @@ class TestMounts(unittest.TestCase):
 
         self.assertEqual(mount_obj, expected)
 
+    def test_multiple_mounts(self):
+        """``dockage`` 'mounts' parses a common, and mounts that path to multiple locations"""
+        mount_dict = {'/home': '/home/bob,/home/jill'}
+
+        mount_objs = dockage.mounts(mount_dict)
+        expected = [docker.types.Mount(source='/home', target='/home/bob', type='bind'),
+                    docker.types.Mount(source='/home', target='/home/jill', type='bind')]
+
+        self.assertEqual(mount_objs, expected)
 
 class TestContainerCommand(unittest.TestCase):
     """A suite of test cases for the ``container_command`` function"""
