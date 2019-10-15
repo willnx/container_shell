@@ -92,7 +92,7 @@ class TestContainerCommand(unittest.TestCase):
                                         command='',
                                         runuser='/sbin/runuser',
                                         useradd='/sbin/adduser')
-        expected = "/bin/bash -c '/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -l '"
+        expected = "/bin/bash -c '/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && chown liz:liz /dev/pts/0 2>/dev/null ; /sbin/runuser liz -l '"
 
         self.assertEqual(cmd, expected)
 
@@ -125,7 +125,7 @@ class TestContainerCommand(unittest.TestCase):
                                         command='/usr/local/bin/redis-cli',
                                         runuser='/sbin/runuser',
                                         useradd='/sbin/adduser')
-        expected = '/bin/bash -c \'/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && /sbin/runuser liz -c "/usr/local/bin/redis-cli"\''
+        expected = '/bin/bash -c \'/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && chown liz:liz /dev/pts/0 2>/dev/null ; /sbin/runuser liz -c "/usr/local/bin/redis-cli"\''
 
         self.assertEqual(cmd, expected)
 
