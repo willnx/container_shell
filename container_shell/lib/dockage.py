@@ -143,10 +143,12 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
                                                                                      username)
 
         fix_pty_ownership = 'chown {0}:{0} /dev/pts/0 2>/dev/null'.format(username)
-        everything = "/bin/bash -c '{0} && {1} && {2} ; {3}'".format(make_group,
-                                                                     make_user,
-                                                                     fix_pty_ownership,
-                                                                     run_user)
+        switch_dir = 'cd /home/{} 2>/dev/null'.format(username)
+        everything = "/bin/bash -c '{0} && {1} && {2} ; {3} ; {4}'".format(make_group,
+                                                                           make_user,
+                                                                           fix_pty_ownership,
+                                                                           switch_dir,
+                                                                           run_user)
     elif command:
         everything = command
     else:
