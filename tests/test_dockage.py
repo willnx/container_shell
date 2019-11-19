@@ -145,6 +145,38 @@ class TestContainerCommand(unittest.TestCase):
 
         self.assertEqual(cmd, expected)
 
+    def test_escape_single_quotes(self):
+        """
+        ``dockage`` 'container_command' escapes single quotes when supplied
+        with a command to execute
+        """
+        cmd = dockage.container_command(username='liz',
+                                        user_uid=9001,
+                                        user_gid=9001,
+                                        create_user='true',
+                                        command="exec sh -c 'cd ; umask 077 ; mkdir -p .ssh'",
+                                        runuser='/sbin/runuser',
+                                        useradd='/sbin/adduser')
+        expected = "/bin/bash -c \'/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && chown liz:liz /dev/pts/0 2>/dev/null ; cd /home/liz 2>/dev/null ; /sbin/runuser liz -c \"exec sh -c \'cd ; umask 077 ; mkdir -p .ssh\'\"\'"
+
+        self.assertEqual(cmd, expected)
+
+    def test_escape_double_quotes(self):
+        """
+        ``dockage`` 'container_command' escapes double quotes when supplied
+        with a command to execute
+        """
+        cmd = dockage.container_command(username='liz',
+                                        user_uid=9001,
+                                        user_gid=9001,
+                                        create_user='true',
+                                        command='exec sh -c "cd ; umask 077 ; mkdir -p .ssh"',
+                                        runuser='/sbin/runuser',
+                                        useradd='/sbin/adduser')
+        expected = '/bin/bash -c \'/usr/sbin/groupadd --gid 9001 liz && /sbin/adduser -m --uid 9001 --gid 9001 -s /bin/bash liz 2>/dev/null && chown liz:liz /dev/pts/0 2>/dev/null ; cd /home/liz 2>/dev/null ; /sbin/runuser liz -c "exec sh -c "cd ; umask 077 ; mkdir -p .ssh""\''
+
+        self.assertEqual(cmd, expected)
+
 
 class TestGenerateName(unittest.TestCase):
     """A suite of test cases for the ``generate_name`` function"""
