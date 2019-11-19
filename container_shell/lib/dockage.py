@@ -132,7 +132,8 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
     # the user, which is a safer default should a sys admin typo the config.
     if create_user.lower() != 'false':
         if command:
-            run_user = "{0} {1} -c \"{2}\"".format(runuser, username, command)
+            run_user = "{0} {1} -c \"{2}\"".format(runuser, username,
+                                                   command.replace("'", "\'").replace('"', '\"'))
         else:
             # if not a specific command, treat this as a login shell
             run_user = '{0} {1} -l {2}'.format(runuser, username, command)
