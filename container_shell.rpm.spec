@@ -3,7 +3,7 @@ Version: VERSION
 Release: 1
 Summary: Drops you into a container, instead of the host environment.
 License: Apache2
-Requires: docker-ce
+Recommends: docker-ce docker-engine
 Source0: ContainerShell-VERSION.tar.gz
 Url: https://github.com/willnx/container_shell
 
