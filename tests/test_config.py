@@ -27,6 +27,7 @@ class TestDefault(unittest.TestCase):
         test_config.set('config', 'create_user', 'true')
         test_config.set('config', 'command', '')
         test_config.set('config', 'term_signal', 'SIGHUP')
+        test_config.set('config', 'docker_timeout', '300')
         test_config.set('logging', 'location', '/var/log/container_shell/messages.log')
         test_config.set('logging', 'max_size', '1024000') # 1MB
         test_config.set('logging', 'max_count', '3')
