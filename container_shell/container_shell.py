@@ -25,7 +25,7 @@ def main(cli_args=sys.argv[1:]):
     user_gid = user_info.pw_gid
     args = parse_cli(cli_args)
     config, using_defaults, location = get_config(shell_command=args.command)
-    docker_client = docker.from_env()
+    docker_client = docker.from_env(timeout=config['config'].getint('docker_timeout'))
     logger = utils.get_logger(name=__name__,
                               location=config['logging'].get('location'),
                               max_size=config['logging'].getint('max_size'),

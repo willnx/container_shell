@@ -53,6 +53,7 @@ def _default():
     config.set('config', 'create_user', 'true')
     config.set('config', 'command', '')
     config.set('config', 'term_signal', 'SIGHUP')
+    config.set('config', 'docker_timeout', '300')
     config.set('logging', 'location', '/var/log/container_shell/messages.log')
     config.set('logging', 'max_size', '1024000') # 1MB
     config.set('logging', 'max_count', '3')
