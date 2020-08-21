@@ -237,7 +237,6 @@ class PseudoTerminal:
         If `size` is not None, it must be a tuple of (height,width), otherwise
         it will be determined by the size of the current TTY.
         """
-
         if not self.operation.israw():
             return
 
@@ -285,6 +284,9 @@ class PseudoTerminal:
                 except SSLError as doh:
                     if 'The operation did not complete' not in doh.strerror:
                         raise doh
+                else:
+                    if not self.operation._container_info()['State']['Running']: #pylint: disable=W0212
+                        keep_running = False
 
     @staticmethod
     def _get_stdin_pump(pumps):
