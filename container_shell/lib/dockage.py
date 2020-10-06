@@ -86,9 +86,15 @@ def mounts(mount_dict):
     """
     the_mounts = []
     for local_dir, container_dir in mount_dict.items():
+        if container_dir.endswith(':ro'):
+            container_dir = container_dir[:-3]
+            read_only = True
+        else:
+            read_only = False
         for mount_point in container_dir.split(','):
             a_mount = docker.types.Mount(source=local_dir,
                                          target=mount_point,
+                                         read_only=read_only,
                                          type='bind')
             the_mounts.append(a_mount)
     return the_mounts
