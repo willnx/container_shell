@@ -72,8 +72,117 @@ class WINCHHandler:
         if self.original_handler is not None:
             signal.signal(signal.SIGWINCH, self.original_handler)
 
+
+class Operation:
+
+    def israw(self, **kwargs):
+        """
+        are we dealing with a tty or not?
+        """
+        raise NotImplementedError()
+
+    def start(self, **kwargs):
+        """
+        start execution
+        """
+        raise NotImplementedError()
+
+    def resize(self, height, width, **kwargs):
+        """
+        if we have terminal, resize it
+        """
+        raise NotImplementedError()
+
+    def sockets(self):
+        """Return sockets for streams."""
+        raise NotImplementedError()
+
+    def info():
+        """Meta data for the operation."""
+        raise NotImplementedError()
+
+
+class ExecOperation(Operation):
+    """
+    class for handling `docker exec`-like command
+    """
+
+    def __init__(self, client, exec_id, logger, interactive=True, stdout=None, stderr=None, stdin=None):
+        self.exec_id = exec_id
+        self.client = client
+        self.raw = None
+        self.interactive = interactive
+        self.stdout = stdout or sys.stdout
+        self.stderr = stderr or sys.stderr
+        self.stdin = stdin or sys.stdin
+        self._info = None
+        self.logger = logger
+
+    def start(self, sockets=None, **kwargs):
+        """
+        start execution
+        """
+        stream = sockets or self.sockets()
+        pumps = []
+
+        if self.interactive:
+            pumps.append(io.Pump(io.Stream(self.stdin), stream, wait_for_output=False))
+
+        pumps.append(io.Pump(stream, io.Stream(self.stdout), propagate_close=False))
+        # FIXME: since exec_start returns a single socket, how do we
+        #        distinguish between stdout and stderr?
+        # pumps.append(io.Pump(stream, io.Stream(self.stderr), propagate_close=False))
+
+        return pumps
+
+    def israw(self, **kwargs):
+        """
+        Returns True if the PTY should operate in raw mode.
+        If the exec was not started with tty=True, this will return False.
+        """
+
+        if self.raw is None:
+            self.raw = self.stdout.isatty() and self.is_process_tty()
+
+        return self.raw
+
+    def sockets(self):
+        """
+        Return a single socket which is processing all I/O to exec
+        """
+        socket = self.client.exec_start(self.exec_id, socket=True, tty=sys.stdin.isatty())
+        stream = io.Stream(socket)
+        if self.is_process_tty():
+            return stream
+        else:
+            return io.Demuxer(stream)
+
+    def resize(self, height, width, **kwargs):
+        """
+        resize pty of an execed process
+        """
+        self.client.exec_resize(self.exec_id, height=height, width=width)
+
+    def is_process_tty(self):
+        """
+        does execed process have allocated tty?
+        """
+        return self.info()["ProcessConfig"]["tty"]
+
+    def info(self):
+        """
+        Caching wrapper around client.exec_inspect
+        """
+        if self._info is None:
+            info = self.client.exec_inspect(self.exec_id)
+            # So the data structure matches ``RunOperation``
+            info['State'] = {'Running' : info['Running']}
+            self._info = info
+        return self._info
+
+
 #pylint: disable=R0902
-class RunOperation:
+class RunOperation(Operation):
     """
     class for handling `docker run`-like command
     """
@@ -111,7 +220,7 @@ class RunOperation:
         if pty_stderr:
             pumps.append(io.Pump(pty_stderr, io.Stream(self.stderr), propagate_close=False))
 
-        if not self._container_info()['State']['Running']:
+        if not self.info()['State']['Running']:
             self.client.start(self.container, **kwargs) #pylint: disable=W0613
 
         return pumps
@@ -124,7 +233,7 @@ class RunOperation:
         If the container was not started with tty=True, this will return False.
         """
         if self.raw is None:
-            info = self._container_info()
+            info = self.info()
             self.raw = self.stdout.isatty() and info['Config']['Tty']
 
         return self.raw
@@ -136,7 +245,7 @@ class RunOperation:
         If any of the sockets are not attached in the container, `None` is
         returned in the tuple.
         """
-        info = self._container_info()
+        info = self.info()
 
         def attach_socket(key):
             if info['Config']['Attach{0}'.format(key.capitalize())]:
@@ -162,7 +271,7 @@ class RunOperation:
         """
         self.client.resize(self.container, height=height, width=width)
 
-    def _container_info(self):
+    def info(self):
         """
         Thin wrapper around client.inspect_container().
         """
@@ -285,7 +394,7 @@ class PseudoTerminal:
                     if 'The operation did not complete' not in doh.strerror:
                         raise doh
                 else:
-                    if not self.operation._container_info()['State']['Running']: #pylint: disable=W0212
+                    if not self.operation.info()['State']['Running']: #pylint: disable=W0212
                         keep_running = False
 
     @staticmethod

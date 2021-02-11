@@ -42,7 +42,8 @@ def build_args(config, username, user_uid, user_gid, logger):
                                       command=config['config']['command'],
                                       runuser=config['binaries']['runuser'],
                                       useradd=config['binaries']['useradd']),
-        'name' : generate_name(username),
+        'name' : generate_name(username, config['config']['command']),
+        'auto_remove' : config['config']['auto_remove'].lower().startswith('t'),
     }
     container_kwargs.update(qos_args)
     return container_kwargs
@@ -133,10 +134,7 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
                     inside the container
     :type usseradd: String
     """
-    # the config object has a terrible "return binary" function, so check the
-    # literal string value... Checking for "not false" makes it default to create
-    # the user, which is a safer default should a sys admin typo the config.
-    if create_user.lower() != 'false':
+    if _should_create_user(create_user):
         if command:
             run_user = "{0} {1} -c \"{2}\"".format(runuser, username,
                                                    command.replace("'", "\'").replace('"', '\"'))
@@ -163,22 +161,57 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
     return everything
 
 
-def generate_name(username):
-    """Assign a name to the container.
-
-    The name created is a combination of the username of the person creating a
-    container, and a random chunk of HEX characters. The username makes it easy
-    for an admin to know *who's logged in* by running ``docker ps``. The random
-    HEX enables a user to have multiple container sessions (because containers must
-    have unique names).
+def exec_command(container, config, user):
+    """The command to exeicsd  in the container when a user connects.
 
     :Returns: String
 
-    :param username: The user SSHing into the system
-    :type username: String
+    :param runuser: The path to the runuser binary
+    :type runuser: String
+
+    :param user: The user to login as.
+    :type user: String
+
+    :param container_command: Overrride the default container command. Supplying an empty
+                              string results in a normal login shell.
+    :type container_command: String
     """
-    unique_id = uuid.uuid4().hex[:6]
-    return '{}-{}'.format(username, unique_id)
+    default = ' '.join(container.image.attrs['Config']['Cmd'])
+    override = config['config']['command']
+    login_command = override or default
+    syntax = '{} {} -c "{}"'.format(config['binaries']['runuser'], user, login_command.replace('"', '\"').replace("'", "\'"))
+    return syntax
+
+
+def create_exec(docker_client, container, config, username, logger):
+    if _should_create_user(config['config']['create_user']):
+        user = username
+    else:
+        # User is an empty string when the default user for an image is root
+        user = container.attrs['Config']['User'] or 'root'
+    exec_cmd = exec_command(container, config, user)
+    exec_id = docker_client.api.exec_create(container.id,
+                                            exec_cmd,
+                                            tty=sys.stdin.isatty(),
+                                            stdin=True,
+                                            stdout=True,
+                                            stderr=True)
+    return exec_id
+
+
+def _should_create_user(create_user):
+    # the config object has a terrible "return binary" function, so check the
+    # literal string value... Checking for "not false" makes it default to create
+    # the user, which is a safer default should a sys admin typo the config.
+    return create_user.lower() != 'false'
+
+
+def generate_name(username, command):
+    if command.startswith('scp'):
+        name = '{}-{}'.format(username, uuid.uuid4().hex[:6])
+    else:
+        name = username
+    return name
 
 
 def qos(qos_params, logger):
