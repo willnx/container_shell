@@ -74,7 +74,7 @@ class WINCHHandler:
 
 
 class Operation:
-
+    """Base object for operations"""
     def israw(self, **kwargs):
         """
         are we dealing with a tty or not?
@@ -97,17 +97,17 @@ class Operation:
         """Return sockets for streams."""
         raise NotImplementedError()
 
-    def info():
+    def info(self):
         """Meta data for the operation."""
         raise NotImplementedError()
 
-
+#pylint: disable=R0902
 class ExecOperation(Operation):
     """
     class for handling `docker exec`-like command
     """
 
-    def __init__(self, client, exec_id, logger, interactive=True, stdout=None, stderr=None, stdin=None):
+    def __init__(self, client, exec_id, logger, interactive=True, stdout=None, stderr=None, stdin=None): #pylint: disable=C0301,R0913
         self.exec_id = exec_id
         self.client = client
         self.raw = None
@@ -118,7 +118,7 @@ class ExecOperation(Operation):
         self._info = None
         self.logger = logger
 
-    def start(self, sockets=None, **kwargs):
+    def start(self, sockets=None, **kwargs): #pylint: disable=W0221
         """
         start execution
         """
@@ -129,10 +129,6 @@ class ExecOperation(Operation):
             pumps.append(io.Pump(io.Stream(self.stdin), stream, wait_for_output=False))
 
         pumps.append(io.Pump(stream, io.Stream(self.stdout), propagate_close=False))
-        # FIXME: since exec_start returns a single socket, how do we
-        #        distinguish between stdout and stderr?
-        # pumps.append(io.Pump(stream, io.Stream(self.stderr), propagate_close=False))
-
         return pumps
 
     def israw(self, **kwargs):
@@ -152,7 +148,7 @@ class ExecOperation(Operation):
         """
         socket = self.client.exec_start(self.exec_id, socket=True, tty=sys.stdin.isatty())
         stream = io.Stream(socket)
-        if self.is_process_tty():
+        if self.is_process_tty(): #pylint: disable=R1705
             return stream
         else:
             return io.Demuxer(stream)
@@ -200,7 +196,7 @@ class RunOperation(Operation):
         self.stdin = stdin or sys.stdin
         self.logs = logs
 
-    def start(self, sockets=None, **kwargs):
+    def start(self, sockets=None, **kwargs): #pylint: disable=W0221
         """
         Present the PTY of the container inside the current process.
 

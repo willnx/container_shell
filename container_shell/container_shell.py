@@ -17,7 +17,7 @@ import requests
 from container_shell.lib.config import get_config
 from container_shell.lib import utils, dockage, dockerpty
 
-#pylint: disable=R0914,W0102
+#pylint: disable=R0914,R0915,W0102
 def main(cli_args=sys.argv[1:]):
     """Entry point logic"""
     user_info = getpwnam(getuser())
@@ -144,15 +144,15 @@ def set_signal_handlers(container, config, logger):
     persist = config['config']['persist']
     persist_egrep= config['config']['persist_egrep']
     ps_path = config['binaries']['ps']
-    hupped = functools.partial(kill_container, container, 'SIGHUP', persist, persist_egrep, ps_path, logger)
+    hupped = functools.partial(kill_container, container, 'SIGHUP', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGHUP, hupped)
-    interrupt = functools.partial(kill_container, container, 'SIGINT', persist, persist_egrep, ps_path, logger)
+    interrupt = functools.partial(kill_container, container, 'SIGINT', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGINT, interrupt)
-    quit_handler = functools.partial(kill_container, container, 'SIGQUIT', persist, persist_egrep, ps_path, logger)
+    quit_handler = functools.partial(kill_container, container, 'SIGQUIT', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGQUIT, quit_handler)
-    abort = functools.partial(kill_container, container, 'SIGABRT', persist, persist_egrep, ps_path, logger)
+    abort = functools.partial(kill_container, container, 'SIGABRT', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGABRT, abort)
-    termination = functools.partial(kill_container, container, 'SIGTERM', persist, persist_egrep, ps_path, logger)
+    termination = functools.partial(kill_container, container, 'SIGTERM', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGTERM, termination)
 
 def ignore_not_found(func):
@@ -166,6 +166,7 @@ def ignore_not_found(func):
         else:
             return resp
     return inner
+
 
 @ignore_not_found
 def _should_not_kill(container, persist, persist_egrep, ps_path, logger):
@@ -199,15 +200,18 @@ def _should_not_kill(container, persist, persist_egrep, ps_path, logger):
     # terminating it's session just after this one. The result is that the container is kept
     # when it should be deleted.
     container.reload()
+    #pylint: disable=R1705
     if container.attrs['ExecIDs']:
         # There's "other" connections to that environment, so don't nuke the environment.
         return True
     elif persist.lower().startswith('f'):
         return False
     else:
-        return bool(re.search(regex, ps_output.decode(errors='ignore')))
+        found = re.search(regex, ps_output.decode(errors='ignore'))
+        logger.debug("Persistence search results: %s", found)
+        return bool(found)
 
-
+#pylint: disable=R0913
 def kill_container(container, the_signal, persist, persist_egrep, ps_path, logger):
     """Tear down the container when ContainerShell exits
 

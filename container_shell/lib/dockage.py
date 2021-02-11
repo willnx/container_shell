@@ -183,11 +183,13 @@ def exec_command(container, config, username):
     default = ' '.join(container.image.attrs['Config']['Cmd'])
     override = config['config']['command']
     login_command = override or default
-    syntax = '{} {} -c "{}"'.format(config['binaries']['runuser'], user, login_command.replace('"', '\"').replace("'", "\'"))
+    syntax = '{} {} -c "{}"'.format(config['binaries']['runuser'],
+                                    user,
+                                    login_command.replace('"', '\"').replace("'", "\'"))
     return syntax
 
 
-def create_exec(docker_client, container, config, username, logger):
+def create_exec(docker_client, container, config, username, logger): #pylint: disable=W0613
     """Register a command to run against a container.
 
     :Returns: Dictionary
