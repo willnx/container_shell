@@ -161,21 +161,25 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
     return everything
 
 
-def exec_command(container, config, user):
-    """The command to exeicsd  in the container when a user connects.
+def exec_command(container, config, username):
+    """The command to execute in the container.
 
     :Returns: String
 
-    :param runuser: The path to the runuser binary
-    :type runuser: String
+    :param container: The container to run a command against/inside of.
+    :type container: docker.models.containers.Container
 
-    :param user: The user to login as.
-    :type user: String
+    :param config: The defined settings (or defaults) that define the behavior of Container Shell.
+    :type config: configparser.ConfigParser
 
-    :param container_command: Overrride the default container command. Supplying an empty
-                              string results in a normal login shell.
-    :type container_command: String
+    :param username: The name of the user executing ContainerShell.
+    :type username: String
     """
+    if _should_create_user(config['config']['create_user']):
+        user = username
+    else:
+        # User is an empty string when the default user for an image is root
+        user = container.attrs['Config']['User'] or 'root'
     default = ' '.join(container.image.attrs['Config']['Cmd'])
     override = config['config']['command']
     login_command = override or default
@@ -184,12 +188,26 @@ def exec_command(container, config, user):
 
 
 def create_exec(docker_client, container, config, username, logger):
-    if _should_create_user(config['config']['create_user']):
-        user = username
-    else:
-        # User is an empty string when the default user for an image is root
-        user = container.attrs['Config']['User'] or 'root'
-    exec_cmd = exec_command(container, config, user)
+    """Register a command to run against a container.
+
+    :Returns: Dictionary
+
+    :param docker_client: For communicating with the Docker daemon.
+    :type docker_client: docker.client.DockerClient
+
+    :param container: The container to run a command against/inside of.
+    :type container: docker.models.containers.Container
+
+    :param config: The defined settings (or defaults) that define the behavior of Container Shell.
+    :type config: configparser.ConfigParser
+
+    :param username: The name of the user executing Container Shell.
+    :type username: String
+
+    :param logger: An object for writing errors/messages for debugging problems
+    :type logger: logging.Logger
+    """
+    exec_cmd = exec_command(container, config, username)
     exec_id = docker_client.api.exec_create(container.id,
                                             exec_cmd,
                                             tty=sys.stdin.isatty(),
@@ -207,7 +225,19 @@ def _should_create_user(create_user):
 
 
 def generate_name(username, command):
+    """Create a name for the container.
+
+    :Returns: String
+
+    :param username: The name of the user executing Container Shell.
+    :type username: String
+
+    :param command: The command being ran inside the container.
+    :type command: String
+    """
     if command.startswith('scp'):
+        # SCP command run in their own, standalone containers. So they need
+        # a unique name.
         name = '{}-{}'.format(username, uuid.uuid4().hex[:6])
     else:
         name = username

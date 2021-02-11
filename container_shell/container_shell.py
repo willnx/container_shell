@@ -97,15 +97,23 @@ def main(cli_args=sys.argv[1:]):
 
 
 def _get_container(docker_client, username, config, **create_kwargs):
-    """
+    """Find or create the Linux container to operate against.
+
     :Returns: Tuple
 
-    :param docker_client:
-    :type docker_client:
+    :param docker_client: For communicating with the Docker daemon.
+    :type docker_client: docker.client.DockerClient
 
+    :param username: The name of the user running Container Shell.
+    :type username: String
+
+    :param config: The defined settings (or defaults) that define the behavior of Container Shell.
+    :type config: configparser.ConfigParser
     """
     standalone = False
     if config['config']['command'].startswith('scp'):
+        # Not sure why, but I can only get `scp` to work via it's own container.
+        # Hacky, but if can fix please let me know!
         container = docker_client.containers.create(**create_kwargs)
         standalone = True
     else:
@@ -126,6 +134,9 @@ def set_signal_handlers(container, config, logger):
 
     :param container: The container created by ContainerShell
     :type container: docker.models.containers.Container
+
+    :param config: The defined settings (or defaults) that define the behavior of Container Shell.
+    :type config: configparser.ConfigParser
 
     :param logger: An object for writing errors/messages for debugging problems
     :type logger: logging.Logger
@@ -162,11 +173,12 @@ def _should_not_kill(container, persist, persist_egrep, ps_path, logger):
 
     :Returns: Boolean
 
-    :param container:
-    :type container:
+    :param container: The container a user was connected to.
+    :type container: docker.models.containers.Container
 
-    :param persist:
-    :type persist:
+    :param persist: The config setting that defines if Container Shell should
+                    keep the container after a user disconnects.
+    :type persist: String
 
     :param persist_egrep: The egrep-like syntax to search the proces
     :type persist_egrep: String
