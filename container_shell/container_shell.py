@@ -232,25 +232,14 @@ def kill_container(container, the_signal, persist, persist_egrep, ps_path, logge
     logger.debug('Tearing down container')
     try:
         container.exec_run('kill -{} 1'.format(the_signal))
-    except requests.exceptions.HTTPError as doh:
-        if doh.response.status_code == 409:
-            # the container is already stopped
-            pass
-        else:
-            logger.exception(doh)
-    try:
-        container.kill()
-    except requests.exceptions.HTTPError as doh:
+    except docker.errors.APIError as doh:
         status_code = doh.response.status_code
         #pylint: disable=R1714
         if status_code == 404 or status_code == 409:
             # Container is already deleted, or stopped
             pass
         else:
-            logger.info(dir(doh))
             logger.exception(doh)
-    except Exception as doh: #pylint: disable=W0703
-        logger.exception(doh)
     try:
         container.remove()
     except docker.errors.NotFound:
