@@ -180,13 +180,11 @@ def exec_command(container, config, username):
     else:
         # User is an empty string when the default user for an image is root
         user = container.image.attrs['Config']['User'] or 'root'
-    default = ' '.join(container.image.attrs['Config']['Cmd'])
     override = config['config']['command']
-    login_command = override or default
-    if login_command:
+    if override:
         syntax = '{} {} -c "{}"'.format(config['binaries']['runuser'],
                                         user,
-                                        login_command.replace('"', '\"').replace("'", "\'"))
+                                        override.replace('"', '\"').replace("'", "\'"))
     else:
         syntax = '{} -l {}'.format(config['binaries']['runuser'], user,)
     return syntax
