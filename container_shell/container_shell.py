@@ -12,7 +12,6 @@ from pwd import getpwnam
 from getpass import getuser
 
 import docker
-import requests
 
 from container_shell.lib.config import get_config
 from container_shell.lib import utils, dockage, dockerpty
