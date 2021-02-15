@@ -66,5 +66,6 @@ def _default():
     config.set('binaries', 'useradd', '/usr/sbin/useradd')
     config.set('binaries', 'grep', '/usr/bin/grep')
     config.set('binaries', 'ps', '/usr/bin/ps')
+    config.set('binaries', 'id', '/usr/bin/id')
 
     return config
