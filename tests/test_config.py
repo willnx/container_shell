@@ -40,6 +40,7 @@ class TestDefault(unittest.TestCase):
         test_config.set('binaries', 'useradd', '/usr/sbin/useradd')
         test_config.set('binaries', 'grep', '/usr/bin/grep')
         test_config.set('binaries', 'ps', '/usr/bin/ps')
+        test_config.set('binaries', 'id', '/usr/bin/id')
 
         default_config = config._default()
 

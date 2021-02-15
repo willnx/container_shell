@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import time
 import atexit
 import signal
 import argparse
@@ -122,7 +123,37 @@ def _get_container(docker_client, username, config, **create_kwargs):
         else:
             container = docker_client.containers.create(**create_kwargs)
             container.start()
+            _block_on_init(container, username, config['binaries']['id'])
     return container, standalone
+
+
+def _block_on_init(container, username, id_path, timeout=60):
+    """There's a race between starting the container and creating the user inside
+    it, and running the ``exec`` against the container to connect the user to it.
+
+
+    :Returns: None
+
+    :param container: The container created by ContainerShell
+    :type container: docker.models.containers.Container
+
+    :param username: The name of the user running Container Shell.
+    :type username: String
+
+    :param id_path: The location of the ``id`` command/binary
+    :type id_path: String
+
+    :param timeout: Maximum number of seconds to block
+    :type timeout: Integer
+    """
+    start_time = time.time()
+    command = '{} {}'.format(id_path, username)
+    still_making = container.exec_run(command).exit_code
+    while still_making:
+        time.sleep(0.1)
+        if (time.time() - start_time) > timeout:
+            raise RuntimeError('Failed to create user within {} seconds'.format(timeout))
+        still_making = container.exec_run(command).exit_code
 
 
 def set_signal_handlers(container, config, logger):

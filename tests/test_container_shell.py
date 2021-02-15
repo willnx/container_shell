@@ -14,6 +14,7 @@ from container_shell.lib.config import _default
 class TestContainerShellMain(unittest.TestCase):
     """A suite of test cases for the container_shell main function"""
 
+    @patch.object(container_shell, '_block_on_init')
     @patch.object(container_shell.atexit, 'register')
     @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell, 'get_config')
@@ -22,7 +23,7 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_basic(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                   fake_get_config, fake_get_logger, fake_register):
+                   fake_get_config, fake_get_logger, fake_register, fake_block_on_init):
         """``container_shell`` The 'main' function is runnable"""
         fake_get_config.return_value = (_default(), True, '')
         try:
@@ -34,6 +35,7 @@ class TestContainerShellMain(unittest.TestCase):
 
         self.assertTrue(runable)
 
+    @patch.object(container_shell, '_block_on_init')
     @patch.object(container_shell.atexit, 'register')
     @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell, 'get_config')
@@ -42,7 +44,7 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_custom_config(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                   fake_get_config, fake_get_logger, fake_register):
+                   fake_get_config, fake_get_logger, fake_register, fake_block_on_init):
         """``container_shell`` Logs custom configs at DEBUG level"""
         fake_logger = MagicMock()
         fake_get_logger.return_value = fake_logger
@@ -57,6 +59,7 @@ class TestContainerShellMain(unittest.TestCase):
 
         self.assertTrue(ok)
 
+    @patch.object(container_shell, '_block_on_init')
     @patch.object(container_shell.atexit, 'register')
     @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell.subprocess, 'Popen')
@@ -68,7 +71,8 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_admin(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                   fake_get_config, fake_getpwnam, fake_exit, fake_Popen, fake_get_logger, fake_register):
+                   fake_get_config, fake_getpwnam, fake_exit, fake_Popen, fake_get_logger,
+                   fake_register, fake_block_on_init):
         """``conatiner_shell`` Skips invoking a container if the identity is white-listed"""
         fake_config = _default()
         fake_config['config']['skip_users'] = 'admin,bob,liz'
@@ -82,6 +86,8 @@ class TestContainerShellMain(unittest.TestCase):
 
         self.assertTrue(fake_Popen.called)
 
+
+    @patch.object(container_shell, '_block_on_init')
     @patch.object(container_shell.atexit, 'register')
     @patch.object(container_shell.utils, 'get_logger')
     @patch.object(container_shell.sys, 'exit')
@@ -91,7 +97,7 @@ class TestContainerShellMain(unittest.TestCase):
     @patch.object(container_shell, 'dockage')
     @patch.object(container_shell.utils, 'printerr')
     def test_update_failure(self, fake_printerr, fake_dockage, fake_docker, fake_dockerpty,
-                            fake_get_config, fake_exit, fake_get_logger, fake_register):
+                            fake_get_config, fake_exit, fake_get_logger, fake_register, fake_block_on_init):
         """``container_shell`` Prints an error and exits if unable to update the container image"""
         fake_docker.errors.DockerException = Exception # Hack because I mock all of the `docker` lib
         fake_get_config.return_value = (_default(), True, '')
@@ -178,7 +184,8 @@ class TestGetContainer(unittest.TestCase):
         self.assertTrue(found is existing_container)
         self.assertFalse(stanalone)
 
-    def test_creates(self):
+    @patch.object(container_shell, '_block_on_init')
+    def test_creates(self, fake_block_on_init):
         """``container_shell`` '_get_container' makes a container for shared environment is none exist already"""
         containers = [MagicMock(), MagicMock()]
         self.docker_client.containers.list.return_value = containers
@@ -229,6 +236,28 @@ class TestGetContainer(unittest.TestCase):
                                                  **self.create_kwargs)
 
         self.assertFalse(found.start.called)
+
+    @patch.object(container_shell.time, 'sleep')
+    def test_block_on_init(self, fake_sleep):
+        """``container_shell`` '_block_on_init' waits until the user is created in the container"""
+        fake_container = MagicMock()
+        fake_exec = MagicMock()
+        fake_exec.exit_code = 0
+        fake_container.exec_run.side_effect = [MagicMock(), fake_exec]
+
+        container_shell._block_on_init(fake_container, 'sally', '/usr/bin/id')
+
+        self.assertTrue(fake_sleep.called)
+
+    @patch.object(container_shell.time, 'time')
+    @patch.object(container_shell.time, 'sleep')
+    def test_block_on_init_timeout(self, fake_sleep, fake_time):
+        """``container_shell`` '_block_on_init' raises RuntimeError upon timeout"""
+        fake_container = MagicMock()
+        fake_time.side_effect = [1, 9001]
+
+        with self.assertRaises(RuntimeError):
+            container_shell._block_on_init(fake_container, 'sally', '/usr/bin/id')
 
 
 class TestShouldNotKill(unittest.TestCase):
