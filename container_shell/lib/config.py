@@ -54,6 +54,9 @@ def _default():
     config.set('config', 'command', '')
     config.set('config', 'term_signal', 'SIGHUP')
     config.set('config', 'docker_timeout', '300')
+    config.set('config', 'auto_remove', 'true')
+    config.set('config', 'persist', '')
+    config.set('config', 'persist_egrep', 'screen|tmux|coreutils')
     config.set('logging', 'location', '/var/log/container_shell/messages.log')
     config.set('logging', 'max_size', '1024000') # 1MB
     config.set('logging', 'max_count', '3')
@@ -61,5 +64,7 @@ def _default():
     config.set('dns', 'servers', '')
     config.set('binaries', 'runuser', '/sbin/runuser')
     config.set('binaries', 'useradd', '/usr/sbin/useradd')
+    config.set('binaries', 'grep', '/usr/bin/grep')
+    config.set('binaries', 'ps', '/usr/bin/ps')
 
     return config

@@ -42,7 +42,8 @@ def build_args(config, username, user_uid, user_gid, logger):
                                       command=config['config']['command'],
                                       runuser=config['binaries']['runuser'],
                                       useradd=config['binaries']['useradd']),
-        'name' : generate_name(username),
+        'name' : generate_name(username, config['config']['command']),
+        'auto_remove' : config['config']['auto_remove'].lower().startswith('t'),
     }
     container_kwargs.update(qos_args)
     return container_kwargs
@@ -133,10 +134,7 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
                     inside the container
     :type usseradd: String
     """
-    # the config object has a terrible "return binary" function, so check the
-    # literal string value... Checking for "not false" makes it default to create
-    # the user, which is a safer default should a sys admin typo the config.
-    if create_user.lower() != 'false':
+    if _should_create_user(create_user):
         if command:
             run_user = "{0} {1} -c \"{2}\"".format(runuser, username,
                                                    command.replace("'", "\'").replace('"', '\"'))
@@ -163,22 +161,92 @@ def container_command(username, user_uid, user_gid, create_user, command, runuse
     return everything
 
 
-def generate_name(username):
-    """Assign a name to the container.
-
-    The name created is a combination of the username of the person creating a
-    container, and a random chunk of HEX characters. The username makes it easy
-    for an admin to know *who's logged in* by running ``docker ps``. The random
-    HEX enables a user to have multiple container sessions (because containers must
-    have unique names).
+def exec_command(container, config, username):
+    """The command to execute in the container.
 
     :Returns: String
 
-    :param username: The user SSHing into the system
+    :param container: The container to run a command against/inside of.
+    :type container: docker.models.containers.Container
+
+    :param config: The defined settings (or defaults) that define the behavior of Container Shell.
+    :type config: configparser.ConfigParser
+
+    :param username: The name of the user executing ContainerShell.
     :type username: String
     """
-    unique_id = uuid.uuid4().hex[:6]
-    return '{}-{}'.format(username, unique_id)
+    if _should_create_user(config['config']['create_user']):
+        user = username
+    else:
+        # User is an empty string when the default user for an image is root
+        user = container.image.attrs['Config']['User'] or 'root'
+    default = ' '.join(container.image.attrs['Config']['Cmd'])
+    override = config['config']['command']
+    login_command = override or default
+    if login_command:
+        syntax = '{} {} -c "{}"'.format(config['binaries']['runuser'],
+                                        user,
+                                        login_command.replace('"', '\"').replace("'", "\'"))
+    else:
+        syntax = '{} -l {}'.format(config['binaries']['runuser'], user,)
+    return syntax
+
+
+def create_exec(docker_client, container, config, username, logger): #pylint: disable=W0613
+    """Register a command to run against a container.
+
+    :Returns: Dictionary
+
+    :param docker_client: For communicating with the Docker daemon.
+    :type docker_client: docker.client.DockerClient
+
+    :param container: The container to run a command against/inside of.
+    :type container: docker.models.containers.Container
+
+    :param config: The defined settings (or defaults) that define the behavior of Container Shell.
+    :type config: configparser.ConfigParser
+
+    :param username: The name of the user executing Container Shell.
+    :type username: String
+
+    :param logger: An object for writing errors/messages for debugging problems
+    :type logger: logging.Logger
+    """
+    exec_cmd = exec_command(container, config, username)
+    exec_id = docker_client.api.exec_create(container.id,
+                                            exec_cmd,
+                                            tty=sys.stdin.isatty(),
+                                            stdin=True,
+                                            stdout=True,
+                                            stderr=True)
+    return exec_id
+
+
+def _should_create_user(create_user):
+    # the config object has a terrible "return binary" function, so check the
+    # literal string value... Checking for "not false" makes it default to create
+    # the user, which is a safer default should a sys admin typo the config.
+    return create_user.lower() != 'false'
+
+
+def generate_name(username, command):
+    """Create a name for the container.
+
+    :Returns: String
+
+    :param username: The name of the user executing Container Shell.
+    :type username: String
+
+    :param command: The command being ran inside the container.
+    :type command: String
+    """
+    if command.startswith('scp'):
+        # SCP command run in their own, standalone containers. So they need
+        # a unique name.
+        name = '{}-{}'.format(username, uuid.uuid4().hex[:6])
+    else:
+        name = username
+    return name
 
 
 def qos(qos_params, logger):

@@ -88,7 +88,7 @@ class TestRunOperation(unittest.TestCase):
         fake_client = MagicMock()
         fake_container = MagicMock()
         run_operation = pty.RunOperation(fake_client, fake_container)
-        run_operation._container_info = lambda : {'State' : {'Running' : False}}
+        run_operation.info = lambda : {'State' : {'Running' : False}}
         run_operation.sockets = lambda: (1,2,3)
 
         pumps = run_operation.start()
@@ -100,7 +100,7 @@ class TestRunOperation(unittest.TestCase):
         fake_client = MagicMock()
         fake_container = MagicMock()
         run_operation = pty.RunOperation(fake_client, fake_container)
-        run_operation._container_info = lambda: {"Config" : {"Tty" : True}}
+        run_operation.info = lambda: {"Config" : {"Tty" : True}}
 
         answer = run_operation.israw()
 
@@ -121,7 +121,7 @@ class TestRunOperation(unittest.TestCase):
         fake_client = MagicMock()
         fake_container = MagicMock()
         run_operation = pty.RunOperation(fake_client, fake_container)
-        run_operation._container_info = lambda: {'Config': {'Tty': False,
+        run_operation.info = lambda: {'Config': {'Tty': False,
                                                             'AttachStdin' : MagicMock(),
                                                             'AttachStdout' : MagicMock(),
                                                             'AttachStderr' : MagicMock()}}
@@ -137,7 +137,7 @@ class TestRunOperation(unittest.TestCase):
         fake_client = MagicMock()
         fake_container = MagicMock()
         run_operation = pty.RunOperation(fake_client, fake_container)
-        run_operation._container_info = lambda: {'Config': {'Tty': False,
+        run_operation.info = lambda: {'Config': {'Tty': False,
                                                             'AttachStdin' : False,
                                                             'AttachStdout' : False,
                                                             'AttachStderr' : False}}
@@ -159,13 +159,13 @@ class TestRunOperation(unittest.TestCase):
 
         self.assertEqual(the_kwargs, expected_kwargs)
 
-    def test_container_info(self):
-        """```dockerpty.pty`` RunOperation '_container_info' inspects the container"""
+    def test_info(self):
+        """```dockerpty.pty`` RunOperation 'info' inspects the container"""
         fake_client = MagicMock()
         fake_container = MagicMock()
         run_operation = pty.RunOperation(fake_client, fake_container)
 
-        run_operation._container_info()
+        run_operation.info()
         the_args, _ = fake_client.inspect_container.call_args
         expected_args = (fake_container,)
 

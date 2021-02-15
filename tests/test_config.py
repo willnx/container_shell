@@ -28,6 +28,9 @@ class TestDefault(unittest.TestCase):
         test_config.set('config', 'command', '')
         test_config.set('config', 'term_signal', 'SIGHUP')
         test_config.set('config', 'docker_timeout', '300')
+        test_config.set('config', 'auto_remove', 'true')
+        test_config.set('config', 'persist', '')
+        test_config.set('config', 'persist_egrep', 'screen|tmux|coreutils')
         test_config.set('logging', 'location', '/var/log/container_shell/messages.log')
         test_config.set('logging', 'max_size', '1024000') # 1MB
         test_config.set('logging', 'max_count', '3')
@@ -35,6 +38,8 @@ class TestDefault(unittest.TestCase):
         test_config.set('dns', 'servers', '')
         test_config.set('binaries', 'runuser', '/sbin/runuser')
         test_config.set('binaries', 'useradd', '/usr/sbin/useradd')
+        test_config.set('binaries', 'grep', '/usr/bin/grep')
+        test_config.set('binaries', 'ps', '/usr/bin/ps')
 
         default_config = config._default()
 
