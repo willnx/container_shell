@@ -238,9 +238,9 @@ def generate_name(username, command):
     :param command: The command being ran inside the container.
     :type command: String
     """
-    if command.startswith('scp'):
-        # SCP command run in their own, standalone containers. So they need
-        # a unique name.
+    if command.startswith('scp') or command.endswith('sftp-server'):
+        # SCP & SFTP commands run in their own, standalone containers.
+        # So they need a unique name.
         name = '{}-{}'.format(username, uuid.uuid4().hex[:6])
     else:
         name = username

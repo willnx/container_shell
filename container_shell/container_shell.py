@@ -111,7 +111,8 @@ def _get_container(docker_client, username, config, **create_kwargs):
     :type config: configparser.ConfigParser
     """
     standalone = False
-    if config['config']['command'].startswith('scp'):
+    command = config['config']['command']
+    if command.startswith('scp') or command.endswith('sftp-server'):
         # Not sure why, but I can only get `scp` to work via it's own container.
         # Hacky, but if can fix please let me know!
         container = docker_client.containers.create(**create_kwargs)
