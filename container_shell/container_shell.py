@@ -74,20 +74,21 @@ def main(cli_args=sys.argv[1:]):
                                     config['binaries']['ps'],
                                     logger)
         atexit.register(cleanup)
-        # When OpenSSH detects that a client has disconnected, it'll send
-        # SIGHUP to the process ran when that client connected.
-        # If we don't handle this signal, then users who click the little "x"
-        # on their SSH application (instead of pressing "CTL D" or typing "exit")
-        # will cause ContainerShell to leak containers. In other words, the
-        # SSH session will be gone, but the container will remain.
-        set_signal_handlers(container, config, logger)
     try:
         if standalone:
             logger.debug("Connecting to standalone container")
+            # When OpenSSH detects that a client has disconnected, it'll send
+            # SIGHUP to the process ran when that client connected.
+            # If we don't handle this signal, then users who click the little "x"
+            # on their SSH application (instead of pressing "CTL D" or typing "exit")
+            # will cause ContainerShell to leak containers. In other words, the
+            # SSH session will be gone, but the container will remain.
+            set_container_signal_handlers(container, config, logger)
             dockerpty.start(docker_client.api, container.id)
         else:
             logger.debug("Connecting to shared container")
             exec_id = dockage.create_exec(docker_client, container, config, username, logger)
+            set_exec_signal_handlers(docker_client, exec_id, logger)
             exec_op = dockerpty.pty.ExecOperation(docker_client.api, exec_id, logger)
             dockerpty.pty.PseudoTerminal(docker_client.api, exec_op).start()
     except Exception as doh: #pylint: disable=W0703
@@ -157,9 +158,9 @@ def _block_on_init(container, username, id_path, timeout=60):
         still_making = container.exec_run(command).exit_code
 
 
-def set_signal_handlers(container, config, logger):
+def set_container_signal_handlers(container, config, logger):
     """Set all the OS signal handlers, so we proxy signals to the process(es)
-    inside the container
+    inside the container.
 
     :Returns: None
 
@@ -173,7 +174,7 @@ def set_signal_handlers(container, config, logger):
     :type logger: logging.Logger
     """
     persist = config['config']['persist']
-    persist_egrep= config['config']['persist_egrep']
+    persist_egrep = config['config']['persist_egrep']
     ps_path = config['binaries']['ps']
     hupped = functools.partial(kill_container, container, 'SIGHUP', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGHUP, hupped)
@@ -185,6 +186,33 @@ def set_signal_handlers(container, config, logger):
     signal.signal(signal.SIGABRT, abort)
     termination = functools.partial(kill_container, container, 'SIGTERM', persist, persist_egrep, ps_path, logger) #pylint: disable=C0301
     signal.signal(signal.SIGTERM, termination)
+
+
+def set_exec_signal_handlers(docker_client, exec_id, logger):
+    """Propagate signals to the PID for the ``docker exec`` instance.
+
+    This is mostly for OpenSSH support. So regardless of the program you run
+    inside the container, any of the "tear down" signals get cast to SIGTERM.
+
+    :Returns: None
+
+    :param docker_client: For communicating with the Docker daemon.
+    :type docker_client: docker.client.DockerClient
+
+    :param exec_id: The Id -> hex mapping for the exec id.
+    :type exec_id: Dictionary
+
+    :param logger: An object for writing errors/messages for debugging problems
+    :type logger: logging.Logger
+    """
+    logger.info("Setting EXEC signal handlers")
+    exec_handle = functools.partial(kill_exec, docker_client, exec_id, logger)
+    signal.signal(signal.SIGHUP, exec_handle)
+    signal.signal(signal.SIGINT, exec_handle)
+    signal.signal(signal.SIGQUIT, exec_handle)
+    signal.signal(signal.SIGABRT, exec_handle)
+    signal.signal(signal.SIGTERM, exec_handle)
+
 
 def ignore_not_found(func):
     """Avoids SPAM when attempting to kill an auto-removed container"""
@@ -277,6 +305,47 @@ def kill_container(container, the_signal, persist, persist_egrep, ps_path, logge
         pass
     except Exception as doh: #pylint: disable=W0703
         logger.exception(doh)
+
+#pylint: disable=W0613
+def kill_exec(docker_client, exec_id, logger, *args, **kwargs):
+    """Send SIGTERM to terminate the PID from the ``docker exec`` instance.
+
+    :Returns: None
+
+    :param docker_client: For communicating with the Docker daemon.
+    :type docker_client: docker.client.DockerClient
+
+    :param exec_id: The Id -> hex mapping for the exec id.
+    :type exec_id: Dictionary
+
+    :param logger: An object for writing errors/messages for debugging problems
+    :type logger: logging.Logger
+    """
+    pid = int(docker_client.api.exec_inspect(exec_id['Id'])['Pid'])
+    os.kill(pid, 15) #SIGTERM
+    cycles = _block_on_pid(pid)
+    logger.debug("Exec blocked for %s sec on pid %s to exit gracefully", cycles, pid)
+
+
+def _block_on_pid(pid):
+    """It can take a few seconds for the process to gracefully exit.
+
+    Waits upwards of 60 seconds for the process to terminate. Returns the number
+    of seconds the pid took to terminate.
+
+    :Returns: Integer
+
+    :param pid: The process ID of the ``docker exec`` instance.
+    :type pid: Integer
+    """
+    for i in range(60):
+        try:
+            os.kill(pid, 0) # signal zero does nothing
+        except ProcessLookupError:
+            break
+        else:
+            time.sleep(1)
+    return i
 
 
 def parse_cli(cli_args):

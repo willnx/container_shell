@@ -21,9 +21,8 @@ Under the hood
 Normally, to run a docker command you need to  be ``root`` or part of the
 ``docker`` group
 (which `effectively is root <https://docs.docker.com/engine/security/security/>`_).
-Container Shell avoids this by leveraging the `setgid <https://en.wikipedia.org/wiki/Setuid>`_
-permission, allowing a user that is not part of the ``docker`` group the ability
-to access a admin-defined container.
+Container Shell avoids this by leveraging the `setuid <https://en.wikipedia.org/wiki/Setuid>`_
+permission, allowing an unprivileged user the ability to access a admin-defined container.
 
 
 Installing
