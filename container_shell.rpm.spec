@@ -28,8 +28,8 @@ cp -R * %{buildroot}
 rm -rf %{buildroot}
 
 %post
-chown :docker /usr/bin/container_shell
-chmod g+s /usr/bin/container_shell
+chown root /usr/bin/container_shell
+chmod u+s /usr/bin/container_shell
 
 mkdir -p /var/log/container_shell
 # Yeah, this is a bit cheesy, but it:
