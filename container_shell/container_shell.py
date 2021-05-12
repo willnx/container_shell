@@ -115,17 +115,25 @@ def _get_container(docker_client, username, config, **create_kwargs):
     command = config['config']['command']
     if command.startswith('scp') or command.endswith('sftp-server'):
         # Not sure why, but I can only get `scp` to work via it's own container.
-        # Hacky, but if can fix please let me know!
+        # Hacky, but if you can fix please let me know!
         container = docker_client.containers.create(**create_kwargs)
         standalone = True
     else:
-        for container in docker_client.containers.list():
+        for container in docker_client.containers.list(all=True):
             if container.name == username:
                 break
         else:
             container = docker_client.containers.create(**create_kwargs)
-            container.start()
-            _block_on_init(container, username, config['binaries']['id'])
+
+    if container.status == 'created' and not standalone:
+        # Correctly handles two different situations:
+        #   1) A new container was just created.
+        #   2) for whatever reason, the container exists but was stopped.
+        # Two containers with the same name cannot exist. If the server was
+        # suddenly rebooted, users might be unable to connect because their
+        # old session exists, it's just not running.
+        container.start()
+        _block_on_init(container, username, config['binaries']['id'])
     return container, standalone
 
 

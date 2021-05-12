@@ -190,6 +190,7 @@ class TestGetContainer(unittest.TestCase):
         containers = [MagicMock(), MagicMock()]
         self.docker_client.containers.list.return_value = containers
         new_container = MagicMock()
+        new_container.status = 'created'
         self.docker_client.containers.create.return_value = new_container
 
         found, _ = container_shell._get_container(self.docker_client,
@@ -221,7 +222,7 @@ class TestGetContainer(unittest.TestCase):
         self.assertTrue(self.docker_client.containers.create.called)
 
     def test_standalone_not_started(self):
-        """``container_shell`` '_get_container' stanalone containers are not started"""
+        """``container_shell`` '_get_container' standalone containers are not started"""
         # "-t" is a hidden flag, and how scp accepts a file from your on the remove machine over SSH.
         self.config['config']['command'] = 'scp -t /tmp/test.txt'
 
